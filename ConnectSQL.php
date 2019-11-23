@@ -8,7 +8,7 @@
 $servername = "localhost";
 $username = "root";
 $password = "090029";
-$dbName = "lesson";
+$dbName = "course_select_system";
 
 // 创建连接
 $conn = new mysqli($servername, $username, $password, $dbName);
