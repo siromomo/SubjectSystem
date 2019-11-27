@@ -4,6 +4,8 @@ require_once 'PHPExcel.php';
 require_once 'PHPExcel/IOFactory.php';
 require_once 'PHPExcel/Reader/Excel5.php';
 
+$conn = connectToDB();
+
 function basicExcelLoader($filename)
 {
 //以上三步加载phpExcel的类

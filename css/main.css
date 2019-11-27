@@ -1,0 +1,7 @@
+.rowIndex{
+    display: flex;
+    justify-content: center;
+}
+.rowIndex .jumbotron{
+    flex-grow: 1;
+}
