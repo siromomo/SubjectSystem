@@ -5,3 +5,7 @@
 .rowIndex .jumbotron{
     flex-grow: 1;
 }
+
+.table.panel-heading h3{
+    text-align: center;
+}

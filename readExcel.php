@@ -3,6 +3,7 @@ require_once 'ConnectSQL.php';
 require_once 'PHPExcel.php';
 require_once 'PHPExcel/IOFactory.php';
 require_once 'PHPExcel/Reader/Excel5.php';
+require_once 'components.php';
 
 $conn = connectToDB();
 
@@ -119,7 +120,7 @@ function sectionLoader($conn){
                 $r2 = $stmt2->execute();
                 if(!$r2){
                     if(stristr(mysqli_error($conn), "duplicate")){
-                        echo "课程$values[7]时间段冲突" . "<br>";
+                        echo "课程 $values[7] 与已有课程时间段冲突" . "<br>";
                     }
                     else
                         echo mysqli_error($conn);
@@ -158,7 +159,6 @@ function testLoader($conn){
         }
     }
 }
-
 function takesLoader($conn){
     $sheet = basicExcelLoader("./data/takes.xls");
     $highestRow = $sheet->getHighestRow();
@@ -169,56 +169,12 @@ function takesLoader($conn){
         for($j = 0; $j < 5; $j++,$A++){
             $values[$j] = $sheet->getCell(chr($A) . $i)->getValue();
         }
-        $select_time_slot = $conn->prepare("select time_slot_id from class_time_place 
-        where (sec_id, course_id, semester, year) = (?, ?, ?, ?)");
-        $select_time_slot->bind_param("issi", $values[1], $values[2], $values[3], $values[4]);
-        $ts1 = $select_time_slot->execute();
-        if(!$ts1){
-            echo mysqli_error($conn) . "<br>";
-        }
-        $time_slot_1 = '';
-        $select_time_slot->store_result();
-        $select_time_slot->bind_result($time_slot_1);
-        //$select_time_slot->close();
-        $select_time_slot_2 = $conn->prepare("select time_slot_id from class_time_place 
-        where (sec_id, year, course_id, semester) in 
-        (select sec_id, year, course_id, semester from takes where student_id=(?))");
-        if(!$select_time_slot_2){
-            echo mysqli_error($conn) . "<br>";
-        }
-        $select_time_slot_2->bind_param("s", $values[0]);
-        $ts2 = $select_time_slot_2->execute();
-        if(!$ts2){
-            echo mysqli_error($conn) . "<br>";
-        }
-        $invalid = false;
-        $time_slot_2 = '';
-        $select_time_slot_2->store_result();
-        $select_time_slot_2->bind_result($time_slot_2);
-        //$select_time_slot_2->close();
-        while ($select_time_slot->fetch()){
-            while($select_time_slot_2->fetch()){
-                if($time_slot_1 === $time_slot_2){
-                    echo "选课时间冲突"."<br>";
-                    $invalid = true;
-                    break;
-                }
-            }
-            if($invalid) break;
-        }
-
-        if($invalid) continue;
-        $stmt = $conn->prepare("insert into takes(student_id, sec_id, year, course_id, semester) values (?,?,?,?,?)");
-        $stmt->bind_param("siiss", $values[0], $values[1], $values[4], $values[2], $values[3]);
-        $r = $stmt->execute();
-        if(!$r){
-            echo mysqli_error($conn) . "<br>";
-        }
+        takeCourse($conn, $values[0], $values[1], $values[4], $values[2], $values[3]);
     }
 }
 
 //testLoader($conn);
-//takesLoader($conn);
+takesLoader($conn);
 
 //alter table class_time_place add unique(time_slot_id, classroom_id, semester, year);
 // alter table exam_time_place add unique(time_slot_id, classroom_id);

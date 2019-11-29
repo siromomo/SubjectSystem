@@ -7,7 +7,11 @@
  */
 require_once 'ConnectSQL.php';
 require_once 'components.php';
+session_start();
 $conn_root = connectToDB();
+if(isset($_SESSION['st_id'])){
+    jump_to_page("/SubjectSystem/personal_index_student.php");
+}
 if(isset($_POST['st_id'])) {
     $st_id = $_POST['st_id'];
     $st_name=$_POST['st_name'];
@@ -17,7 +21,7 @@ if(isset($_POST['st_id'])) {
     if($role === 'student'){
         $verify_user = $conn_root->prepare("select student_id from student where student_name=?");
     }else{
-        $verify_user = $conn_root->prepare("select instructor_id from student where instructor_name=?");
+        $verify_user = $conn_root->prepare("select instructor_id from instructor where instructor_name=?");
     }
 
     if(!$verify_user){
@@ -28,11 +32,18 @@ if(isset($_POST['st_id'])) {
     $verify_user->bind_result($id_in_db);
     $verify_user->fetch();
     if($id_in_db === $st_id){
-        alert_msg("登录成功");
-    }else{
-        alert_msg($id_in_db . " " . $st_id);
-    }
 
+        $_SESSION['role']=$role;
+        $_SESSION['st_id']=$st_id;
+        alert_msg("登录成功");
+        if($role === 'student'){
+            jump_to_page("/SubjectSystem/personal_index_student.php");
+        }else{
+            jump_to_page("/SubjectSystem/personal_index_instructor.php");
+        }
+    }else{
+        alert_msg("工号或姓名填写错误");
+    }
 }
 ?>
 <!DOCTYPE html>
