@@ -70,6 +70,7 @@ foreach($sec_set as $sec){
         }
     }
 }
+$app_list = get_application_list_for_student($conn, $st_id);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -202,6 +203,39 @@ foreach($sec_set as $sec){
                 }
                 ?>
 
+                </tbody>
+            </table>
+            <table class="table table-striped">
+                <caption class="table panel-heading"><h3>申请列表</h3></caption>
+                <thead>
+                <tr>
+                    <th>申请id</th>
+                    <th>申请内容</th>
+                    <th>课程id</th>
+                    <th>课程段id</th>
+                    <th>学期</th>
+                    <th>年份</th>
+                    <th>申请状态</th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php
+                foreach ($app_list as $app){
+                    if($app->app_status == ''){
+                        $app->app_status = '未处理';
+                    }
+                    echo "<tr>
+                            <td>$app->app_id</td>
+                            <td>$app->app_content</td>
+                            <td>$app->app_course_id</td>
+                            <td>$app->app_sec_id</td>
+                            <td>$app->app_semester</td>
+                            <td>$app->app_year</td>
+                            <td>$app->app_status</td>
+                            <td>
+                          </tr>";
+                }
+                ?>
                 </tbody>
             </table>
         </div>
