@@ -69,7 +69,7 @@ create table classroom(
   primary key (classroom_id)
 );
 create table application(
-  appli_id int,
+  appli_id int auto_increment,
   appii_status varchar(20),
   appli_content text,
   appli_time time,
@@ -147,10 +147,20 @@ create table drops(
 grant all privileges on `course_select_system`.* to collegeadmin;
 grant select on `course_select_system`.* to student;
 grant insert on `course_select_system`.`application` to student;
+grant insert on `course_select_system`.`drops` to student;
 grant insert on `course_select_system`.`takes` to student;
 grant delete on `course_select_system`.`takes` to student;
 grant select on `course_select_system`.* to teacher;
 grant update on `course_select_system`.`takes` to teacher;
 grant update on `course_select_system`.`application` to teacher;
 grant delete on `course_select_system`.`section` to teacher;
+grant update on `course_select_system`.`section` to student;
 flush privileges;
+
+alter table takes add unique(student_id, sec_id, course_id, semester, year);
+alter table exam_time_place add unique(time_slot_id, classroom_id);
+alter table class_time_place add unique(time_slot_id, classroom_id, semester, year);
+alter table application modify column `appli_time` datetime default CURRENT_TIMESTAMP;
+alter table application add unique(student_id, sec_id, course_id, semester, year);
+grant update on `course_select_system`.`section` to teacher;
+grant insert on `course_select_system`.`takes` to teacher;

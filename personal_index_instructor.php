@@ -102,8 +102,8 @@ $app_list = get_app_for_sec_set($conn, $sec_set);
                             <td>$sec->selected_num</td>
                             <td>$sec->course_name</td>
                             <td>$sec->class_to_time_str</td>
-                            <td><a class='btn btn-default' href='section_member_list.php
-                            ?sec_id=$sec->sec_id&course_id=$sec->course_id&semester=$sec->semester&year=$sec->year'>
+                            <td><a class='btn btn-default' 
+                            href='section_member_list.php?sec_id=$sec->sec_id&course_id=$sec->course_id&semester=$sec->semester&year=$sec->year'>
                             查看花名册</a></td>
                           </tr>";
                 }
