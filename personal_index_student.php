@@ -24,7 +24,7 @@ if(isset($_GET['choose_or_drop'])){
     $cd_year = $_GET['year'];
     $res = false;
     if($_GET['choose_or_drop'] == 'choose'){
-        $res = choose_lesson($conn, $st_id, $cd_sec_id, $cd_course_id, $cd_semester, $cd_year);
+        $res = take_lesson($conn, $st_id, $cd_sec_id,  $cd_year, $cd_course_id, $cd_semester);
     }else{
         $res = drop_lesson($conn, $st_id, $cd_sec_id, $cd_course_id, $cd_semester, $cd_year);
     }
@@ -71,6 +71,8 @@ foreach($sec_set as $sec){
     }
 }
 $app_list = get_application_list_for_student($conn, $st_id);
+$test_list = get_test_list($conn, $st_id);
+$paper_list = get_paper_list($conn, $st_id);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -233,6 +235,50 @@ $app_list = get_application_list_for_student($conn, $st_id);
                             <td>$app->app_year</td>
                             <td>$app->app_status</td>
                             <td>
+                          </tr>";
+                }
+                ?>
+                </tbody>
+            </table>
+            <table class="table table-striped">
+                <caption class="table panel-heading"><h3>考试列表</h3></caption>
+                <thead>
+                <tr>
+                    <th>考试id</th>
+                    <th>课程id</th>
+                    <th>考试方式</th>
+                    <th>考试时间</th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php
+                foreach ($test_list as $test){
+                    echo "<tr>
+                            <td>$test->exam_id</td>
+                            <td>$test->course_id</td>
+                            <td>$test->style</td>
+                            <td>$test->class_to_time_str</td>
+                          </tr>";
+                }
+                ?>
+                </tbody>
+            </table>
+            <table class="table table-striped">
+                <caption class="table panel-heading"><h3>论文列表</h3></caption>
+                <thead>
+                <tr>
+                    <th>论文id</th>
+                    <th>课程id</th>
+                    <th>论文要求</th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php
+                foreach ($paper_list as $paper){
+                    echo "<tr>
+                            <td>$paper->exam_id</td>
+                            <td>$paper->course_id</td>
+                            <td>$paper->demand</td>
                           </tr>";
                 }
                 ?>

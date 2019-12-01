@@ -1,5 +1,41 @@
 <?php
 
+/*
+ * component：工具函数类
+ * 相关函数：
+ * ------------学生相关--------------
+ * take_lesson($conn, $student_id, $sec_id, $year, $course_id, $semester) - 选课
+ * get_section_have_chosen($conn, $student_id) - 获取学生已选课程
+ * get_section_to_choose($conn) - 获取可选课程
+ * get_class_time_place($conn, $section) - 从相关联系集中初始化课程的时间地点
+ * 注：在学生主页的php代码部分将已选课程从可选课程中减去了
+ * 注2：那个choose_lesson好像没有什么用，不过我也不知道我是不是在哪调用了这东西，所以就没删
+ * drop_lesson($conn, $student_id, $sec_id, $course_id, $semester, $year) - 退课
+ * get_test_list($conn, $student_id) - 获取考试列表
+ * get_test_time_place($conn, $test) - 从相关联系集中初始化考试的时间地点
+ * make_application($conn, $student_id, $sec_id, $course_id, $semester, $year, $appli_content) - 提交申请
+ * check_section_available_to_application($conn, $student_id, $sec_id, $course_id, $semester, $year) - 检查是否能提交申请
+ * get_application_list_for_student($conn, $student_id) - 获取该学生已提交的申请列表
+ * ------------老师相关----------------
+ * get_sec_for_instructor($conn, $instructor_id) - 获取老师教授的课程列表
+ * get_app_for_sec_set($conn, $sec_set) - 从课程列表获取老师需要处理的申请列表
+ * handle_application($conn, $app_id, $new_app_status) - 老师处理申请
+ * handle_unavailable_applications($conn, $sec_id, $course_id, $semester, $year) - 系统自动驳回教室人数已达上限的申请
+ * get_member_for_section($conn, $sec_id, $course_id, $semester, $year) - 获取课程花名册
+ * -----------------------------------
+ * 注3：
+ *  所有连接mysql的语句都用了预处理，做sql注入题做魔怔了…
+ *  这个预处理有点麻烦，有返回结果的做完了一定$stmt->free_result()否则下个查询可能无法进行
+ *  然后就是bind_param的第一个参数是要绑定的参数类型，s是string，i是int，其他大概也用不太到
+ * 注4：
+ *  alert_error我本来是想就alert的然后发现不知道为什么alert不出来，所以就把所有报错都echo在了页面上
+ *  您要是想到了更好的可以改一下这里！
+ * 注5：
+ *  所有函数都有返回值，不需要返回查询结果的函数在成功时返回true，所有函数失败时都返回false
+ * 注6：
+ *  那个refresh_page在页面有get参数的时候一定不要随便调用……会执行很多遍命令的……
+ * */
+
 class Section{
     var $sec_id;
     var $semester;
@@ -78,6 +114,33 @@ class Student{
     }
 }
 
+class Test{
+    var $exam_id;
+    var $course_id;
+    var $style;
+    var $class_to_time;
+    var $class_to_time_str;
+
+    function __construct($exam_id, $course_id, $style){
+        $this->exam_id = $exam_id;
+        $this->course_id = $course_id;
+        $this->style = $style;
+        $this->class_to_time = [];
+    }
+}
+
+class Paper{
+    var $exam_id;
+    var $course_id;
+    var $demand;
+
+    function __construct($exam_id, $course_id, $demand){
+        $this->exam_id = $exam_id;
+        $this->course_id = $course_id;
+        $this->demand = $demand;
+    }
+}
+
 function alert_error($conn, $err = null){
     if($err === null) {
         $err = mysqli_error($conn);
@@ -122,7 +185,7 @@ function time_slot_id_to_string($time_slot_id){
     return $res;
 }
 
-function takeCourse($conn, $student_id, $sec_id, $year, $course_id, $semester){
+function take_lesson($conn, $student_id, $sec_id, $year, $course_id, $semester){
     $select_time_slot = $conn->prepare("select time_slot_id from class_time_place 
         where (sec_id, course_id, semester, year) = (?, ?, ?, ?)");
     $select_time_slot_2 = $conn->prepare("select time_slot_id from class_time_place 
@@ -163,6 +226,8 @@ function takeCourse($conn, $student_id, $sec_id, $year, $course_id, $semester){
             }
         }
     }
+    $select_time_slot->free_result();
+    $select_time_slot_2->free_result();
     $check_selected_num->bind_param("issi", $sec_id, $course_id, $semester, $year);
     $ts3 = $check_selected_num->execute();
     if(!$ts3){
@@ -177,6 +242,39 @@ function takeCourse($conn, $student_id, $sec_id, $year, $course_id, $semester){
         alert_msg("学生 $student_id 选的课程 $course_id 选课人数已满");
         return false;
     }
+    $check_selected_num->free_result();
+    $check_exam_time_1 = $conn->prepare("select time_slot_id 
+              from section natural join exam_time_place where (sec_id, course_id, semester, year) = (?, ?, ?, ?)");
+    $check_exam_time_2 = $conn->prepare("select time_slot_id from section natural join takes natural join exam_time_place
+        where student_id=?");
+    $check_exam_time_1->bind_param("issi", $sec_id, $course_id, $semester, $year);
+    $et1 = $check_exam_time_1->execute();
+    if(!$et1){
+        alert_error($conn);
+        return false;
+    }
+    $exam_time_1 = '';
+    $check_exam_time_1->store_result();
+    $check_exam_time_1->bind_result($exam_time_1);
+    $check_exam_time_2->bind_param("s", $student_id);
+    $et2 = $check_exam_time_2->execute();
+    if(!$et2){
+        alert_error($conn);
+        return false;
+    }
+    $exam_time_2 = '';
+    $check_exam_time_2->store_result();
+    $check_exam_time_2->bind_result($exam_time_2);
+    while($check_exam_time_1->fetch()){
+        while($check_exam_time_2->fetch()){
+            if($exam_time_1 === $exam_time_2){
+                alert_msg("学生 $student_id 选的课程 $course_id 与已选课程考试时间冲突");
+                return false;
+            }
+        }
+    }
+    $check_exam_time_1->free_result();
+    $check_exam_time_2->free_result();
     $stmt->bind_param("siiss", $student_id, $sec_id, $year, $course_id, $semester);
     $r = $stmt->execute();
     if(!$r){
@@ -190,6 +288,7 @@ function takeCourse($conn, $student_id, $sec_id, $year, $course_id, $semester){
         alert_error($conn);
         return false;
     }
+
     return true;
 }
 
@@ -381,6 +480,86 @@ function drop_lesson($conn, $student_id, $sec_id, $course_id, $semester, $year){
     return true;
 }
 
+function get_test_list($conn, $student_id){
+    $stmt = $conn->prepare("select test.exam_id,course_id,style from takes natural join section natural join test where student_id=?");
+    if(!$stmt){
+        alert_error($conn);
+        return false;
+    }
+    $test_list = [];
+    $stmt->bind_param("s", $student_id);
+    $exam_id = 0;
+    $style = '';
+    $course_id = '';
+    $stmt->execute();
+    $stmt->bind_result($exam_id, $course_id, $style);
+    while($stmt->fetch()){
+        $test = new Test($exam_id, $course_id, $style);
+        array_push($test_list, $test);
+    }
+    $stmt->free_result();
+    foreach ($test_list as $test){
+        get_test_time_place($conn, $test);
+    }
+    return $test_list;
+}
+
+function get_paper_list($conn, $student_id){
+    $stmt = $conn->prepare("select paper.exam_id, course_id, demand 
+    from takes natural join section natural join paper where student_id=?");
+    if(!$stmt){
+        alert_error($conn);
+        return false;
+    }
+    $paper_list = [];
+    $stmt->bind_param("s", $student_id);
+    $exam_id = 0;
+    $course_id = '';
+    $demand = '';
+    $stmt->execute();
+    $stmt->bind_result($exam_id, $course_id, $demand);
+    while($stmt->fetch()){
+        $paper = new Paper($exam_id, $course_id, $demand);
+        array_push($paper_list, $paper);
+    }
+    $stmt->free_result();
+    return $paper_list;
+}
+
+function get_test_time_place($conn, $test){
+    $stmt = $conn->prepare("select time_slot_id, classroom_id from exam_time_place 
+        where exam_id=?");
+    if(!$stmt){
+        echo mysqli_error($conn);
+        return '';
+    }
+    $exam_id = $test->exam_id;
+
+    $time_slot_id = '';
+    $classroom_id = '';
+    $stmt->bind_param("s", $exam_id);
+    $stmt->execute();
+    $stmt->bind_result($time_slot_id, $classroom_id);
+
+    $class_to_time = [];
+
+    while($stmt->fetch()){
+        $time_slot = time_slot_id_to_string($time_slot_id);
+        if(!isset($class_to_time[$classroom_id]))
+            $class_to_time[$classroom_id] = $time_slot;
+        else
+            $class_to_time[$classroom_id] .= (",".$time_slot);
+    }
+    $test->class_to_time = $class_to_time;
+    $class_to_time_str = '';
+    foreach($class_to_time as $class=>$time) {
+        $class_to_time_str .= ($time . " " . $class . "<br>");
+    }
+    $test->class_to_time_str = $class_to_time_str;
+
+    $stmt->free_result();
+}
+
 function make_application($conn, $student_id, $sec_id, $course_id, $semester, $year, $appli_content){
     $valid = check_section_available_to_application($conn, $student_id, $sec_id, $course_id, $semester, $year);
     if(!$valid){
@@ -446,6 +625,7 @@ function check_section_available_to_application($conn, $student_id, $sec_id, $co
         return "您已退过该课，不能重复申请";
     }
     $stmt1->free_result();
+
     return "valid";
 }
 
