@@ -10,7 +10,12 @@ require_once 'components.php';
 session_start();
 $conn_root = connectToDB();
 if(isset($_SESSION['st_id'])){
-    jump_to_page("/SubjectSystem/personal_index_student.php");
+    $role = $_SESSION['role'];
+    if($role === 'student'){
+        jump_to_page("/SubjectSystem/personal_index_student.php");
+    }else{
+        jump_to_page("/SubjectSystem/personal_index_instructor.php");
+    }
 }
 if(isset($_POST['st_id'])) {
     $st_id = $_POST['st_id'];

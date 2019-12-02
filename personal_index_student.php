@@ -14,9 +14,11 @@ if(!isset($_SESSION['st_id'])) {
     jump_to_page("/SubjectSystem/index.php");
 }
 $role = $_SESSION['role'];
+if($role === 'teacher'){
+    jump_to_page("/SubjectSystem/personal_index_instructor.php");
+}
 $st_id = $_SESSION['st_id'];
 $conn = connectToDB("localhost", $role, $role, "course_select_system");
-
 if(isset($_GET['choose_or_drop'])){
     $cd_sec_id = $_GET['sec_id'];
     $cd_course_id = $_GET['course_id'];
@@ -28,9 +30,10 @@ if(isset($_GET['choose_or_drop'])){
     }else{
         $res = drop_lesson($conn, $st_id, $cd_sec_id, $cd_course_id, $cd_semester, $cd_year);
     }
-    if($res){
+    if($res)
         jump_to_page("/SubjectSystem/personal_index_student.php");
-    }
+    else
+        echo "别刷新，先把get后面的参数删了";
 }
 
 if(isset($_POST['app_course_id'])){

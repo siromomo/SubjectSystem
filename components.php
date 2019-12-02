@@ -186,6 +186,7 @@ function time_slot_id_to_string($time_slot_id){
 }
 
 function take_lesson($conn, $student_id, $sec_id, $year, $course_id, $semester){
+    $conn->autocommit(false);
     $select_time_slot = $conn->prepare("select time_slot_id from class_time_place 
         where (sec_id, course_id, semester, year) = (?, ?, ?, ?)");
     $select_time_slot_2 = $conn->prepare("select time_slot_id from class_time_place 
@@ -200,6 +201,7 @@ function take_lesson($conn, $student_id, $sec_id, $year, $course_id, $semester){
     $ts1 = $select_time_slot->execute();
     if(!$ts1){
         alert_error($conn);
+        $conn->rollback();
         return false;
     }
     $time_slot_1 = '';
@@ -207,11 +209,13 @@ function take_lesson($conn, $student_id, $sec_id, $year, $course_id, $semester){
     $select_time_slot->bind_result($time_slot_1);
     if(!$select_time_slot_2){
         alert_error($conn);
+        $conn->rollback();
         return false;
     }
     $select_time_slot_2->bind_param("s", $student_id);
     $ts2 = $select_time_slot_2->execute();
     if(!$ts2){
+        $conn->rollback();
         return false;
     }
     $time_slot_2 = '';
@@ -222,6 +226,7 @@ function take_lesson($conn, $student_id, $sec_id, $year, $course_id, $semester){
         while($select_time_slot_2->fetch()){
             if($time_slot_1 === $time_slot_2){
                 alert_msg("学生 $student_id 选的课程 $course_id 与已选课程时间冲突");
+                $conn->rollback();
                 return false;
             }
         }
@@ -232,6 +237,7 @@ function take_lesson($conn, $student_id, $sec_id, $year, $course_id, $semester){
     $ts3 = $check_selected_num->execute();
     if(!$ts3){
         alert_error($conn);
+        $conn->rollback();
         return false;
     }
     $check_selected_num->store_result();
@@ -240,6 +246,7 @@ function take_lesson($conn, $student_id, $sec_id, $year, $course_id, $semester){
     $check_selected_num->fetch();
     if($selected_num >= $number){
         alert_msg("学生 $student_id 选的课程 $course_id 选课人数已满");
+        $conn->rollback();
         return false;
     }
     $check_selected_num->free_result();
@@ -251,6 +258,7 @@ function take_lesson($conn, $student_id, $sec_id, $year, $course_id, $semester){
     $et1 = $check_exam_time_1->execute();
     if(!$et1){
         alert_error($conn);
+        $conn->rollback();
         return false;
     }
     $exam_time_1 = '';
@@ -260,6 +268,7 @@ function take_lesson($conn, $student_id, $sec_id, $year, $course_id, $semester){
     $et2 = $check_exam_time_2->execute();
     if(!$et2){
         alert_error($conn);
+        $conn->rollback();
         return false;
     }
     $exam_time_2 = '';
@@ -269,6 +278,7 @@ function take_lesson($conn, $student_id, $sec_id, $year, $course_id, $semester){
         while($check_exam_time_2->fetch()){
             if($exam_time_1 === $exam_time_2){
                 alert_msg("学生 $student_id 选的课程 $course_id 与已选课程考试时间冲突");
+                $conn->rollback();
                 return false;
             }
         }
@@ -279,6 +289,7 @@ function take_lesson($conn, $student_id, $sec_id, $year, $course_id, $semester){
     $r = $stmt->execute();
     if(!$r){
         alert_error($conn);
+        $conn->rollback();
         return false;
     }
     $selected_num++;
@@ -286,9 +297,10 @@ function take_lesson($conn, $student_id, $sec_id, $year, $course_id, $semester){
     $r = $update_selected_num->execute();
     if(!$r){
         alert_error($conn);
+        $conn->rollback();
         return false;
     }
-
+    $conn->commit();
     return true;
 }
 
@@ -448,6 +460,7 @@ function choose_lesson($conn, $student_id, $sec_id, $course_id, $semester, $year
 }
 
 function drop_lesson($conn, $student_id, $sec_id, $course_id, $semester, $year){
+    $conn->autocommit(false);
     $stmt = $conn->prepare("insert into drops(student_id, sec_id, course_id, semester, year) values(?,?,?,?,?)");
     if(!$stmt){
         alert_error($conn);
@@ -464,6 +477,7 @@ function drop_lesson($conn, $student_id, $sec_id, $course_id, $semester, $year){
     $r1 = $stmt1->execute();
     if(!$r1){
         alert_error($conn);
+        $conn->rollback();
         return false;
     }
     $stmt2 = $conn->prepare("update section set selected_num=
@@ -473,10 +487,13 @@ function drop_lesson($conn, $student_id, $sec_id, $course_id, $semester, $year){
     $r2 = $stmt2->execute();
     if(!$r2){
         alert_error($conn);
+        $conn->rollback();
+        return false;
     }
     $stmt->free_result();
     $stmt1->free_result();
     $stmt2->free_result();
+    $conn->commit();
     return true;
 }
 
@@ -561,26 +578,31 @@ function get_test_time_place($conn, $test){
 }
 
 function make_application($conn, $student_id, $sec_id, $course_id, $semester, $year, $appli_content){
+    $conn->autocommit(false);
     $valid = check_section_available_to_application($conn, $student_id, $sec_id, $course_id, $semester, $year);
     if(!$valid){
         return false;
     }
     if($valid != 'valid'){
         alert_msg($valid);
+        $conn->rollback();
         return false;
     }
     $stmt = $conn->prepare("insert into application(appli_content, student_id, course_id, sec_id, semester, year)
              values (?,?,?,?,?,?)");
     if(!$stmt){
         alert_error($conn);
+        $conn->rollback();
         return false;
     }
     $stmt->bind_param("sssisi", $appli_content, $student_id, $course_id, $sec_id, $semester, $year);
     $r1 = $stmt->execute();
     if(!$r1){
         alert_error($conn);
+        $conn->rollback();
         return false;
     }
+    $conn->commit();
     return true;
 }
 
@@ -690,17 +712,20 @@ function get_app_for_sec_set($conn, $sec_set){
 }
 
 function handle_application($conn, $app_id, $new_app_status){
+    $conn->autocommit(false);
     $stmt = $conn->prepare("update application set appii_status=? where appli_id=?");
     $stmt->bind_param("si", $new_app_status, $app_id);
     $r = $stmt->execute();
     if(!$r){
         alert_error($conn);
+        $conn->rollback();
         return false;
     }
     if($new_app_status == '通过') {
         $stmt1 = $conn->prepare("select student_id, sec_id, course_id, semester, year from application where appli_id=?");
         if(!$stmt1){
             alert_error($conn);
+            $conn->rollback();
             return false;
         }
         $stmt1->bind_param("i", $app_id);
@@ -718,26 +743,28 @@ function handle_application($conn, $app_id, $new_app_status){
     where (sec_id, course_id, semester, year)=(?,?,?,?);");
         if (!$stmt2) {
             alert_error($conn);
+            $conn->rollback();
             return false;
         }
-        //这个地方是不是需要处理事务的原子性问题？比如如果这一步执行不成功需要回滚这个状态
-        //再说吧
         $stmt2->bind_param("issiissi", $sec_id, $course_id, $semester, $year, $sec_id, $course_id, $semester, $year);
         $r2 = $stmt2->execute();
         if(!$r2){
             alert_error($conn);
+            $conn->rollback();
             return false;
         }
         $stmt3 = $conn->prepare("insert into takes (student_id, sec_id, course_id, semester, year)
   values (?,?,?,?,?)");
         if(!$stmt3){
             alert_error($conn);
+            $conn->rollback();
             return false;
         }
         $stmt3->bind_param("sissi", $student_id, $sec_id, $course_id, $semester, $year);
         $r3 = $stmt3->execute();
         if(!$r3){
             alert_error($conn);
+            $conn->rollback();
             return false;
         }
 
@@ -745,12 +772,14 @@ function handle_application($conn, $app_id, $new_app_status){
   natural join classroom where sec_id=? and course_id=? and semester=? and year=?;");
         if(!$stmt4){
             alert_error($conn);
+            $conn->rollback();
             return false;
         }
         $stmt4->bind_param("issi", $sec_id, $course_id, $semester, $year);
         $r4 = $stmt4->execute();
         if(!$r4){
             alert_error($conn);
+            $conn->rollback();
             return false;
         }
         $selected_num = 0;
@@ -765,22 +794,27 @@ function handle_application($conn, $app_id, $new_app_status){
         }
         $stmt4->free_result();
     }
+    $conn->commit();
     return true;
 }
 
 function handle_unavailable_applications($conn, $sec_id, $course_id, $semester, $year){
+    $conn->autocommit(false);
     $stmt = $conn->prepare("update application set appii_status='拒绝' 
             where (sec_id, course_id, semester, year)=(?,?,?,?)");
     if(!$stmt){
         alert_error($conn);
+        $conn->rollback();
         return false;
     }
     $stmt->bind_param("issi", $sec_id, $course_id, $semester, $year);
     $r = $stmt->execute();
     if(!$r){
         alert_error($conn);
+        $conn->rollback();
         return false;
     }
+    $conn->commit();
     return true;
 }
 
