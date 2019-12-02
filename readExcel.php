@@ -206,7 +206,7 @@ function studentLoader($conn,$filename){
     $stmt_update_graduated = $conn->prepare("update student set student_name=?,total_credit=?,gpa=?,enroll_time=?,graduate_time=? where student_id=?");
 
     $sta = true;
-    for($i = 2; $i < $highestRow; $i++){
+    for($i = 2; $i <= $highestRow; $i++){
         $stu_id = $sheet->getCell("A".$i)->getValue();
         $stu_name = $sheet->getCell("B".$i)->getValue();
         $stu_credit = $sheet->getCell("C".$i)->getValue();
@@ -225,6 +225,9 @@ function studentLoader($conn,$filename){
         }else{
             $stu_gtime = null;
         }
+        //phpExcel有时会读入空行
+        if(empty($stu_id))
+            continue;
 
         //检查此学生数据是否已经存在及是否要更新
         $stmt_check->bind_param("s",$stu_id);
@@ -286,12 +289,85 @@ function excelTime($date){
     if($date == null)
         return null;
     $type1 = strpos($date,'/');
-    if($type1){
+    $type2 = strpos($date,'-');
+    if($type1 || $type2){
         $ret_date = $date;
     }else{
         $ret_date = date('Y/m/d',PHPExcel_Shared_Date::ExcelToPHP($date));
     }
     return $ret_date;
+}
+
+function teacherLoader($conn,$filename){
+    mysqli_set_charset($conn, "utf8");
+    $sheet = basicExcelLoader($filename);
+    $highestRow = $sheet->getHighestRow();
+
+    $stmt_not_quit = $conn->prepare("insert into instructor (instructor_id,instructor_name,hire_time,quit_time) values (?,?,?,null)");
+    $stmt_quit = $conn->prepare("insert into instructor (instructor_id,instructor_name,hire_time,quit_time) values (?,?,?,?)");
+    $stmt_check = $conn->prepare("select * from instructor where instructor_id=?");
+    $stmt_update_not_quit = $conn->prepare("update instructor set instructor_name=?,hire_time=?,quit_time=null where instructor_id=?");
+    $stmt_update_quit = $conn->prepare("update instructor set instructor_name=?,hire_time=?,quit_time=? where instructor_id=?");
+
+    $sta = true;
+    for($i = 2; $i <= $highestRow; $i++){
+        $ins_id = $sheet->getCell("A".$i)->getValue();
+        $ins_name = $sheet->getCell("B".$i)->getValue();
+        $ins_htime = $sheet->getCell("C".$i)->getValue();
+        $ins_qtime = $sheet->getCell("D".$i)->getValue();
+        $ins_htime = excelTime($ins_htime);
+        if(empty($ins_qtime))
+            $ins_qtime = null;
+        else
+            $ins_qtime = excelTime($ins_qtime);
+
+        //phpExcel有时会读入空行
+        if(empty($ins_id))
+            continue;
+
+
+        $stmt_check->bind_param("s",$ins_id);
+        $stmt_check->execute();
+        $check_result = $stmt_check->get_result();
+        if($check_result->num_rows){
+            $row = $check_result->fetch_assoc();
+            if($row["instructor_id"] == $ins_id && $row["instructor_name"] == $ins_name
+                && $row["hire_time"] == $ins_htime && $row["quit_time"] == $ins_qtime){
+                $result = true;
+            }else{
+                //更新老师信息
+                if($ins_qtime == null){
+                    $stmt_update_not_quit->bind_param("sss",$ins_name,$ins_htime,$ins_id);
+                    $result = $stmt_update_not_quit->execute();
+                }else{
+                    $stmt_update_quit->bind_param("ssss",$ins_name,$ins_htime,$ins_qtime,$ins_id);
+                    $result = $stmt_update_quit->execute();
+                }
+            }
+        }else{
+            if($ins_qtime == null){
+                $stmt_not_quit->bind_param("sss",$ins_id,$ins_name,$ins_htime);
+                $result = $stmt_not_quit->execute();
+            }else{
+                $stmt_quit->bind_param("ssss",$ins_id,$ins_name,$ins_htime,$ins_qtime);
+                $result = $stmt_quit->execute();
+            }
+        }
+
+        if(!$result){
+            $sta = false;
+            echo "<script>alert('请查看id:".$ins_id.",name:".$ins_id." 的数据，出现错误')</script>";
+        }else{
+            $stmt_not_quit->free_result();
+            $stmt_quit->free_result();
+            $stmt_check->free_result();
+            $stmt_update_not_quit->free_result();
+            $stmt_update_quit->free_result();
+        }
+    }
+    if($sta){
+        echo "<script>alert('导入成功')</script>";
+    }
 }
 
  ?>
