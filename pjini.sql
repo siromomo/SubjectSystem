@@ -16,15 +16,15 @@ create table student(
   student_name varchar(100),
   total_credit int,
   gpa double,
-  enroll_time time,
-  graduate_time time,
+  enroll_time varchar(10),
+  graduate_time varchar(10),
   primary key(student_id)
 );
 create table instructor(
   instructor_id varchar(4),
   instructor_name varchar(100),
-  hire_time time,
-  quit_time time,
+  hire_time varchar(10),
+  quit_time varchar(10),
   primary key (instructor_id)
 );
 create table exam(

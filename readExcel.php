@@ -169,7 +169,8 @@ function takesLoader($conn){
         for($j = 0; $j < 5; $j++,$A++){
             $values[$j] = $sheet->getCell(chr($A) . $i)->getValue();
         }
-        takeCourse($conn, $values[0], $values[1], $values[4], $values[2], $values[3]);
+        //TODO 我注释了下面这行因为找不到这个函数
+//        takeCourse($conn, $values[0], $values[1], $values[4], $values[2], $values[3]);
     }
 }
 
@@ -191,5 +192,106 @@ insertIntoChartBasic("test", ["exam_id", "style"], "ss", $conn);
 insertIntoChartBasic("paper", ["exam_id", "demand"], "ss", $conn);
 */
 //sectionLoader($conn);
+
+function studentLoader($conn,$filename){
+    mysqli_set_charset($conn, "utf8");
+    $sheet = basicExcelLoader($filename);
+    $highestRow = $sheet->getHighestRow();
+
+    $stmt_not_graduate = $conn->prepare("insert into student (student_id,student_name,total_credit,gpa,enroll_time,graduate_time) values (?,?,?,?,?,null)");
+    $stmt_graduated = $conn->prepare("insert into student (student_id,student_name,total_credit,gpa,enroll_time,graduate_time) values (?,?,?,?,?,?)");
+
+    $stmt_check = $conn->prepare("select * from student where student_id=?");
+    $stmt_update_not_graduate = $conn->prepare("update student set student_name=?,total_credit=?,gpa=?,enroll_time=?,graduate_time=null where student_id=?");
+    $stmt_update_graduated = $conn->prepare("update student set student_name=?,total_credit=?,gpa=?,enroll_time=?,graduate_time=? where student_id=?");
+
+    $sta = true;
+    for($i = 2; $i < $highestRow; $i++){
+        $stu_id = $sheet->getCell("A".$i)->getValue();
+        $stu_name = $sheet->getCell("B".$i)->getValue();
+        $stu_credit = $sheet->getCell("C".$i)->getValue();
+        $stu_gpa = $sheet->getCell("D".$i)->getValue();
+        $stu_etime = $sheet->getCell("E".$i)->getValue();
+        $stu_gtime = $sheet->getCell("F".$i)->getValue();
+        if(empty($stu_credit)){
+            $stu_credit = 0;
+        }
+        if(empty($stu_gpa)){
+            $stu_gpa = 0;
+        }
+        $stu_etime = excelTime($stu_etime);
+        if(!empty($stu_gtime)){
+            $stu_gtime = excelTime($stu_gtime);
+        }else{
+            $stu_gtime = null;
+        }
+
+        //检查此学生数据是否已经存在及是否要更新
+        $stmt_check->bind_param("s",$stu_id);
+        $stmt_check->execute();
+        $check_result = $stmt_check->get_result();
+
+        if($check_result->num_rows != 0){
+            $row = $check_result->fetch_assoc();
+            if($row['student_id'] == $stu_id && $row['student_name'] == $stu_name && $row['total_credit'] == $stu_credit && $row['gpa'] == $stu_gpa
+                && $row['enroll_time'] == $stu_etime && $row['graduate_time'] == excelTime($stu_gtime)){
+                //数据库内数据一样，不变
+                $result = true;
+            }else{
+                //更新学生信息
+                if(empty($stu_gtime)){
+                    $stmt_update_not_graduate->bind_param("sidss",$stu_name,$stu_credit,$stu_gpa,$stu_etime,$stu_id);
+                    $result = $stmt_update_not_graduate->execute();
+                }else{
+                    $stmt_update_graduated->bind_param("sidsss",$stu_name,$stu_credit,$stu_gpa,$stu_etime,$stu_gtime,$stu_id);
+                    $result = $stmt_update_graduated->execute();
+                }
+            }
+        }else{
+            if(empty($stu_gtime)){
+                //还没毕业
+                $stmt_not_graduate->bind_param("ssids",$stu_id,$stu_name,$stu_credit,$stu_gpa,$stu_etime);
+                $result = $stmt_not_graduate->execute();
+            }else{
+                //已经毕业
+                $stmt_graduated->bind_param("ssidss",$stu_id,$stu_name,$stu_credit,$stu_gpa,$stu_etime,$stu_gtime);
+                $result = $stmt_graduated->execute();
+            }
+        }
+
+        if(!$result){
+            $sta = false;
+            echo "<script>alert('请查看id:".$stu_id.",name:".$stu_name." 的数据，出现错误')</script>";
+        }else{
+            $stmt_not_graduate->free_result();
+            $stmt_graduated->free_result();
+            $stmt_check->free_result();
+            $stmt_update_not_graduate->free_result();
+            $stmt_update_graduated->free_result();
+        }
+    }
+
+    if($sta){
+        echo "<script>alert('导入成功')</script>";
+    }
+
+}
+
+/**
+ * @param $date - excel里读出来的东西
+ * @return false|string
+ * 如果excel里单元格是日期类型，phpExcel读出来是纳秒数，需要进行转换
+ */
+function excelTime($date){
+    if($date == null)
+        return null;
+    $type1 = strpos($date,'/');
+    if($type1){
+        $ret_date = $date;
+    }else{
+        $ret_date = date('Y/m/d',PHPExcel_Shared_Date::ExcelToPHP($date));
+    }
+    return $ret_date;
+}
 
  ?>

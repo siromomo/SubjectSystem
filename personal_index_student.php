@@ -16,9 +16,11 @@ if(!isset($_SESSION['st_id'])) {
 $role = $_SESSION['role'];
 if($role === 'teacher'){
     jump_to_page("/SubjectSystem/personal_index_instructor.php");
+}else if($role === 'root'){
+    jump_to_page("/SubjectSystem/personal_index_root.php");
 }
 $st_id = $_SESSION['st_id'];
-$conn = connectToDB("localhost", $role, $role, "course_select_system");
+$conn = connectToDB("127.0.0.1", $role, $role, "course_select_system");
 if(isset($_GET['choose_or_drop'])){
     $cd_sec_id = $_GET['sec_id'];
     $cd_course_id = $_GET['course_id'];

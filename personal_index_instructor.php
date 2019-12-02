@@ -17,9 +17,11 @@ if(!isset($_SESSION['st_id'])) {
 $role = $_SESSION['role'];
 if($role === 'student'){
     jump_to_page("/SubjectSystem/personal_index_student.php");
+}else if($role === 'root'){
+    jump_to_page("/SubjectSystem/personal_index_root.php");
 }
 $st_id = $_SESSION['st_id'];
-$conn = connectToDB("localhost", $role, $role, "course_select_system");
+$conn = connectToDB("127.0.0.1", $role, $role, "course_select_system");
 
 if(isset($_GET['new_status'])){
     $app_id = $_GET['app_id'];

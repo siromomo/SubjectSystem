@@ -10,9 +10,9 @@
  * @param string $dbName
  * @return mysqli
  */
-function connectToDB($servername = "localhost",
+function connectToDB($servername = "127.0.0.1",
     $username = "root",
-    $password = "090029",
+    $password = "213Dzfzqksdl",
     $dbName = "course_select_system")
 {
 // 创建连接
