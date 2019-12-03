@@ -86,12 +86,19 @@ $paper_list = get_paper_list($conn, $st_id);
     <link href="css/bootstrap.min.css" rel="stylesheet">
     <link href="css/main.css" rel="stylesheet">
     <title>选课系统·个人主页</title>
+    <script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
+    <script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
 </head>
 <body>
 <div class="container">
     <div class="row rowIndex">
         <div class="jumbotron text-center">
             <h1>选课系统</h1>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-offset-11">
+            <button type="button" class="btn bg-primary" id="exit_btn" onclick="f()">退出</button>
         </div>
     </div>
     <div class="row">
@@ -294,4 +301,18 @@ $paper_list = get_paper_list($conn, $st_id);
 </div>
 </body>
 </html>
+<script type="text/javascript">
+    $(function () {
+        $("#exit_btn").click(function () {
+            $.ajax({
+                url:"/SubjectSystem/logout.php",
+                success:
+                    function () {
+                        window.location.href = "/SubjectSystem/index.php";
+                    }
+
+            })
+        });
+    })
+</script>
 

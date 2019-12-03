@@ -373,6 +373,7 @@ function sectionLoader($conn,$filename){
     }else{
         echo "<script>alert('导入结束')</script>";
     }
+    $conn->autocommit(true);
 //mysqli_error($conn);
 }
 

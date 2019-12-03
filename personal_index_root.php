@@ -28,6 +28,7 @@ $conn = connectToDB();
     <link href="css/bootstrap.min.css" rel="stylesheet">
     <link href="css/main.css" rel="stylesheet">
     <title>教务系统·管理员主页</title>
+<!--    <script src="js/jquery.js"></script>-->
     <script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
     <script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
 </head>
@@ -44,6 +45,14 @@ $conn = connectToDB();
             <a href="#edit_sections" data-toggle="tab">编辑开课信息</a>
         </li>
     </ul>
+    <br/>
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-offset-11">
+                <button type="button" class="btn bg-primary" id="exit_btn" onclick="f()">退出</button>
+            </div>
+        </div>
+    </div>
     <div class="tab-content">
         <div class="tab-pane fade in active" id="edit_students">
             <br/>
@@ -104,9 +113,24 @@ $(document).ready(function () {
     $(document.body).on("click","a[data-toggle]",function (event) {
         location.hash = this.getAttribute("href");
     });
+
 });
 $(window).on('popstate',function () {
     var anchor = location.hash || $("a[data-toggle=tab]").first().attr("href");
     $('a[href=' + anchor + ']').tab('show');
 });
+
+$(function () {
+    $("#exit_btn").click(function () {
+        $.ajax({
+            url:"/SubjectSystem/logout.php",
+            success:
+            function () {
+                window.location.href = "/SubjectSystem/index.php";
+            }
+
+        })
+    });
+})
+
 </script>
