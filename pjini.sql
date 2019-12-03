@@ -28,17 +28,17 @@ create table instructor(
   primary key (instructor_id)
 );
 create table exam(
-  exam_id varchar(4),
+  exam_id int auto_increment,
   week int,
   primary key (exam_id)
 );
 create table test(
-  exam_id varchar(4) unique not null,
+  exam_id int unique not null,
   style varchar(100),
   foreign key (exam_id) references exam(exam_id)
 );
 create table paper(
-  exam_id varchar(4) unique not null,
+  exam_id int unique not null,
   demand varchar(100),
   foreign key (exam_id) references exam(exam_id)
 );
@@ -51,15 +51,15 @@ create table section(
   number int,
   selected_num int,
   course_id varchar(4),
-  exam_id varchar(4),
+  exam_id int,
   primary key (sec_id, year, course_id, semester),
   foreign key (course_id) references course(course_id),
   foreign key (exam_id) references exam(exam_id)
 );
 create table time_slot(
   time_slot_id varchar(10),
-  start_time time,
-  end_time time,
+  start_time varchar(8),
+  end_time varchar(8),
   day_of_week int,
   primary key (time_slot_id)
 );
@@ -95,9 +95,16 @@ create table class_time_place(
   foreign key (time_slot_id) references time_slot(time_slot_id),
   foreign key (classroom_id) references classroom(classroom_id)
 );
+create table exam_time(
+  exam_id int,
+  time_slot_id varchar(10),
+  primary key (exam_id,time_slot_id),
+  foreign key (exam_id) references exam(exam_id),
+  foreign key (time_slot_id) references time_slot(time_slot_id)
+);
 create table exam_time_place(
   specific_exam_id int auto_increment,
-  exam_id varchar(4),
+  exam_id int,
   time_slot_id varchar(10),
   classroom_id varchar(10),
   primary key(specific_exam_id),
@@ -160,6 +167,7 @@ flush privileges;
 alter table takes add unique(student_id, sec_id, course_id, semester, year);
 alter table exam_time_place add unique(time_slot_id, classroom_id);
 alter table class_time_place add unique(time_slot_id, classroom_id, semester, year);
+alter table time_slot add unique(start_time,end_time,day_of_week);
 alter table application modify column `appli_time` datetime default CURRENT_TIMESTAMP;
 alter table application add unique(student_id, sec_id, course_id, semester, year);
 grant update on `course_select_system`.`section` to teacher;

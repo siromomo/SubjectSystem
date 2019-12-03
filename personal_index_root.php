@@ -15,6 +15,10 @@ if($role === 'teacher'){
 
 $conn = connectToDB();
 
+//insertIntoChartBasic("classroom", ["classroom_id", "capacity"], "si", $conn);
+//insertIntoChartBasic("course", ["course_id", "course_name", "credit", "class_hours"], "ssii", $conn);
+//insertIntoChartBasic("time_slot", ["time_slot_id", "start_time", "end_time", "day_of_week"], "sssi", $conn);
+
 ?>
 
 <!DOCTYPE html>
@@ -74,10 +78,21 @@ $conn = connectToDB();
         }
         ?>
         <div class="tab-pane fade" id="edit_sections">
-            <div class="row">
-                3
-            </div>
+            <br/>
+            <form class="form-inline" role="form" method="post" enctype="multipart/form-data" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel">
+                <div class="form-group">
+                    <input type="file" id="file_sec" name="file_sec">
+                </div>
+                <button type="submit" class="btn btn-default">导入</button>
+            </form>
         </div>
+        <?php
+        if(isset($_FILES['file_sec'])){
+            if (is_uploaded_file($_FILES['file_sec']['tmp_name'])) {
+                sectionLoader($conn,$_FILES['file_sec']['tmp_name']);
+            }
+        }
+        ?>
     </div>
 </div>
 </body>

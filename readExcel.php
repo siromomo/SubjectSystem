@@ -68,66 +68,312 @@ function insertIntoChartBasic($chartName, $columnName, $type, $conn){
         echo '<script>alert("数据导入成功！");</script>';
     }
 }
+/*phpExcel有时候会读出一个object要转换一下*/
+function toString($cell){
+    if(is_object($cell))
+        $cell = $cell->__toString();
+    return $cell;
+}
 
-function sectionLoader($conn){
-    $sheet = basicExcelLoader("./data/section.xls");
+function sectionLoader($conn,$filename){
+    $sheet = basicExcelLoader($filename);//"./data/section.xls"
     $highestRow = $sheet->getHighestRow(); // 取得总行数
-    $stmt1 = $conn->prepare("insert into section (sec_id, semester, year, start_week, end_week, number, selected_num, 
-                     course_id, exam_id) values(?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt2 = $conn->prepare("insert into class_time_place (time_slot_id, classroom_id, sec_id, year, course_id, semester) 
-                     values(?, ?, ?, ?, ?, ?)");
-    $stmt3 = $conn->prepare("insert into teaches(instructor_id, sec_id, year, course_id, semester) values (?,?,?,?,?)");
 
+    $stmt_search_section = $conn->prepare("select * from `section` where course_id=? and sec_id=? and semester=? and `year`=?");
+    $stmt_insert_section = $conn->prepare("insert into `section` (course_id, sec_id, semester, `year`, start_week, end_week, `number`, selected_num, exam_id) values(?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt_insert_exam = $conn->prepare("insert into exam (week) values (?)");
+    $stmt_insert_paper = $conn->prepare("insert into paper (exam_id,demand) values (?,?)");
+    $stmt_insert_test = $conn->prepare("insert into test (exam_id,style) values (?,?)");
+    $stmt_search_time_slot = $conn->prepare("select time_slot_id from time_slot where start_time=? and end_time=? and day_of_week=?");
+    $stmt_insert_time_slot = $conn->prepare("insert into time_slot (time_slot_id,start_time,end_time,day_of_week) values (?,?,?,?)");
+    $stmt_inset_exam_time = $conn->prepare("insert into exam_time (exam_id,time_slot_id) values (?,?)");
+    $stmt_insert_teaches = $conn->prepare("insert into teaches(instructor_id, course_id, sec_id, semester, `year`) values (?,?,?,?,?)");
+    $stmt_insert_class_time_place = $conn->prepare("insert into class_time_place (time_slot_id, classroom_id, course_id, sec_id, semester, `year`)
+                     values(?, ?, ?, ?, ?, ?)");
+
+    $conn->autocommit(false);
+    $sta = true;
+    //事务处理
     for($i = 2; $i <= $highestRow; $i++){
+//        echo "<script>alert('第".$i."行')</script>";
         $values = [];
         $class_time = [];
         $A = ord("A");
-        for($j = 0; $j < 9; $j++,$A++){
+        for($j = 0; $j <=3; $j++,$A++){
             $values[$j] = $sheet->getCell(chr($A) . $i)->getValue();
+            $values[$j] = toString($values[$j]);
         }
-        $insIds = $sheet->getCell(chr($A).$i)->getValue();
+        if(empty($values[0]))
+            break;
+
+        $error_mes_update = "第".$i."行数据：".$values[0].".".$values[1].$values[2].$values[3]." 更新失败，请检查";
+        $error_mes_insert = "第".$i."行数据：".$values[0].".".$values[1].$values[2].$values[3]." 插入失败，请检查";
+        $error_mes_insert_conflict1 = "第".$i."行数据：".$values[0].".".$values[1].$values[2].$values[3]." 插入失败，请检查教室-时间冲突";
+        $error_mes_insert_conflict2 = "第".$i."行数据：".$values[0].".".$values[1].$values[2].$values[3]." 插入失败，请检查老师-时间冲突";
+
+
+        $stmt_search_section->free_result();
+        $stmt_search_section->bind_param("sisi",$values[0],$values[1],$values[2],$values[3]);
+        $stmt_search_section->execute();
+        $search_result = $stmt_search_section->get_result();
+        if($search_result->num_rows){
+            //更新已有课程数据
+            $row = $search_result->fetch_assoc();
+
+            //删除之前的
+            $stmt_delete_class_time_place = $conn->prepare("delete from class_time_place where course_id=? and sec_id=? and semester=? and `year`=?");
+            $stmt_delete_class_time_place->bind_param("sisi",$values[0],$values[1],$values[2],$values[3]);
+            $result = $stmt_delete_class_time_place->execute();
+            if(!$result){
+                $sta = false;
+                $conn->rollback();
+                echo "<script>alert('".$error_mes_update."')</script>";
+                continue;
+            }
+            $stmt_delete_class_time_place->free_result();
+
+            $stmt_delete_teaches = $conn->prepare("delete from teaches where course_id=? and sec_id=? and semester=? and `year`=?");
+            $stmt_delete_teaches->bind_param("sisi",$values[0],$values[1],$values[2],$values[3]);
+            $result = $stmt_delete_teaches->execute();
+            if(!$result){
+                $sta = false;
+                $conn->rollback();
+                echo "<script>alert('".$error_mes_update."')</script>";
+                continue;
+            }
+            $stmt_delete_teaches->free_result();
+
+            $stmt_delete_exam_time = $conn->prepare("delete from exam_time where exam_id=?");
+            $stmt_delete_exam_time->bind_param("i",$row["exam_id"]);
+            $result = $stmt_delete_exam_time->execute();
+            if(!$result){
+                $sta = false;
+                $conn->rollback();
+                echo "<script>alert('".$error_mes_update."')</script>";
+                continue;
+            }
+            $stmt_delete_exam_time->free_result();
+
+            $stmt_delete_test = $conn->prepare("delete from test where exam_id=?");
+            $stmt_delete_test->bind_param("i",$row["exam_id"]);
+            //TODO 查询为空也返回true才行，但是我不知道是不是
+            $result = $stmt_delete_test->execute();
+            if(!$result){
+                $sta = false;
+                $conn->rollback();
+                echo "<script>alert('".$error_mes_update."')</script>";
+                continue;
+            }
+            $stmt_delete_test->free_result();
+
+            $stmt_delete_paper = $conn->prepare("delete from paper where exam_id=?");
+            $stmt_delete_paper->bind_param("i",$row["exam_id"]);
+            $result = $stmt_delete_paper->execute();
+            if(!$result){
+                $sta = false;
+                $conn->rollback();
+                echo "<script>alert('".$error_mes_update."')</script>";
+                continue;
+            }
+            $stmt_delete_paper->free_result();
+
+            $stmt_delete_section = $conn->prepare("delete from `section` where course_id=? and sec_id=? and semester=? and `year`=?");
+            $stmt_delete_section->bind_param("sisi",$values[0],$values[1],$values[2],$values[3]);
+            $result = $stmt_delete_section->execute();
+            if(!$result){
+                $sta = false;
+                $conn->rollback();
+                echo "<script>alert('".$error_mes_update."')</script>";
+                continue;
+            }
+            $stmt_delete_section->free_result();
+
+            $stmt_delete_exam = $conn->prepare("delete from exam where exam_id=?");
+            $stmt_delete_exam->bind_param("i",$row["exam_id"]);
+            $result = $stmt_delete_exam->execute();
+            if(!$result){
+//                alert_error($conn);
+                $sta = false;
+                $conn->rollback();
+                echo "<script>alert('".$error_mes_update."')</script>";
+                continue;
+            }
+            $stmt_delete_exam->free_result();
+
+        }
+
+        //读入的数据
+        $values[4] = $sheet->getCell(chr($A++) . $i)->getValue();//start_week
+        $values[4] = toString($values[4]);
+        $values[5] = $sheet->getCell(chr($A++) . $i)->getValue();//end_week
+        $values[5] = toString($values[5]);
+        $values[6] = $sheet->getCell(chr($A++) . $i)->getValue();//number
+        $values[6] = toString($values[6]);
+        $values[7] = $sheet->getCell(chr($A++) . $i)->getValue();//selected_number
+        $values[7] = toString($values[7]);
+        $insIds = $sheet->getCell(chr($A++).$i)->getValue();//instructors
+        $insIds = toString($insIds);
         $insIdArray = explode(",",$insIds);
-        for($A++; ; $j++, $A += 2){
+        $exam_week = $sheet->getCell(chr($A++) . $i)->getValue();
+        $exam_week = toString($exam_week);
+        $exam_day = $sheet->getCell(chr($A++) . $i)->getValue();
+        $exam_day = toString($exam_day);
+        $exam_type = $sheet->getCell(chr($A++) . $i)->getValue();
+        $exam_type = toString($exam_type);
+        $exam_des = $sheet->getCell(chr($A++) . $i)->getValue();
+        $exam_des = toString($exam_des);
+        $exam_stime = $sheet->getCell(chr($A++) . $i)->getValue();
+        $exam_stime = toString($exam_stime);
+        $exam_etime = $sheet->getCell(chr($A++) . $i)->getValue();
+        $exam_etime = toString($exam_etime);
+
+        for(;;$A += 2){
             $class = $sheet->getCell(chr($A) . $i)->getValue();
             $times = $sheet->getCell(chr($A+1) . $i)->getValue();
-            if(strlen($class) == 0 || stristr($class, "冲突") || stristr($class, "-"))
+            $class = toString($class);
+            $times = toString($times);
+            if(empty($class) || strlen($class) == 0 || stristr($class, "冲突") || stristr($class, "-"))
                 break;
-           /* echo $class . "<br>";
-            echo $times . "<br>";*/
+//            if($i >= 0){
+//                var_dump($class);
+//                echo "  ".$i."|||";
+//            }
             $class_time[$class]=$times;
         }
-        $stmt1->bind_param("ssiiiiiss", $values[0], $values[1], $values[2], $values[3], $values[4],
-            $values[5], $values[6], $values[7], $values[8]);
-        $r1 = $stmt1->execute();
-        if(!$r1){
-            echo mysqli_error($conn);
+        //插入数据
+
+        $stmt_insert_exam->free_result();
+        $stmt_insert_exam->bind_param("i",$exam_week);
+        $result = $stmt_insert_exam->execute();
+        if(!$result){
+            $sta = false;
+            $conn->rollback();
+            echo "<script>alert('".$error_mes_insert."')</script>";
+            continue;
         }
-        if(sizeof($insIdArray)>0 && strlen($insIdArray[0])>0) {
-            foreach ($insIdArray as $insId) {
-                echo $insId . "<br>";
-                $stmt3->bind_param("siiss", $insId, $values[0], $values[2], $values[7], $values[1]);
-                $r3 = $stmt3->execute();
-                if (!$r3) {
-                    echo mysqli_error($conn) . "<br>";
+
+        $auto_exam_id = mysqli_insert_id($conn);//得到自增的exam_id
+
+        $stmt_insert_test->free_result();
+        $stmt_insert_paper->free_result();
+        if($exam_type == "考试"){
+            $stmt_insert_test->bind_param("is",$auto_exam_id,$exam_des);
+            $result = $stmt_insert_test->execute();
+        }else{
+            $stmt_insert_paper->bind_param("is",$auto_exam_id,$exam_des);
+            $result = $stmt_insert_paper->execute();
+        }
+        if(!$result){
+            $sta = false;
+            $conn->rollback();
+            echo "<script>alert('".$error_mes_insert."')</script>";
+            continue;
+        }
+
+        if($exam_type == "考试"){
+            $stmt_search_time_slot->free_result();
+            $stmt_search_time_slot->bind_param("ssi",$exam_stime,$exam_etime,$exam_day);
+            $stmt_search_time_slot->execute();
+            $time_slot_search_result = $stmt_search_time_slot->get_result();
+            if($time_slot_search_result->num_rows == 0){
+                $tmp = "时间".$auto_exam_id;
+                $stmt_insert_time_slot->bind_param("sssi",$tmp,$exam_stime,$exam_etime,$exam_day);
+                $result = $stmt_insert_time_slot->execute();
+                if(!$result){
+                    $sta = false;
+                    $conn->rollback();
+                    echo "<script>alert('".$error_mes_insert."')</script>";
+                    continue;
                 }
             }
+
+            $stmt_search_time_slot->free_result();
+            $stmt_search_time_slot->execute();
+            $time_slot_search_result = $stmt_search_time_slot->get_result();
+            $row_ts = $time_slot_search_result->fetch_assoc();
+
+            $stmt_inset_exam_time->free_result();
+            $stmt_inset_exam_time->bind_param("is",$auto_exam_id,$row_ts["time_slot_id"]);
+            $result = $stmt_inset_exam_time->execute();
+            if(!$result){
+//                alert_error($conn);
+                $sta = false;
+                $conn->rollback();
+                echo "<script>alert('".$error_mes_insert."')</script>";
+                continue;
+            }
         }
+
+
+        $stmt_insert_section->free_result();
+        $stmt_insert_section->bind_param("sisiiiiii",$values[0],$values[1],$values[2],$values[3],$values[4],$values[5],$values[6],$values[7],$auto_exam_id);
+        $result = $stmt_insert_section->execute();
+        if(!$result){
+//            alert_error($conn);
+            $sta = false;
+            $conn->rollback();
+            echo "<script>alert('".$error_mes_insert."')</script>";
+            continue;
+        }
+
+        //要先插入课程时间再插入老师任教
         foreach ( $class_time as $class => $times){
             $time = explode(",", $times);
             foreach ($time as $t){
-                $stmt2->bind_param("ssiiss", $t, $class, $values[0], $values[2], $values[7], $values[1]);
-               // echo $t . " ", $class. " ", $values[0]. " ", $values[2]. " ", $values[7]. " ", $values[1]. "<br>";
-                $r2 = $stmt2->execute();
-                if(!$r2){
-                    if(stristr(mysqli_error($conn), "duplicate")){
-                        echo "课程 $values[7] 与已有课程时间段冲突" . "<br>";
-                    }
-                    else
-                        echo mysqli_error($conn);
+                $stmt_insert_class_time_place->free_result();
+                $stmt_insert_class_time_place->bind_param("sssisi",$t,$class,$values[0], $values[1], $values[2], $values[3]);
+                $result = $stmt_insert_class_time_place->execute();
+                if(!$result){
+                    $sta = false;
+                    $conn->rollback();
+                    echo "<script>alert('".$error_mes_insert_conflict1."')</script>";
+                    continue 3;
                 }
             }
         }
+
+        foreach ($insIdArray as $insId){
+            $stmt_check_teacher_section_conflict= $conn->prepare("select time_slot_id 
+                                                    from class_time_place CTP
+                                                    where course_id=? and sec_id=? and semester=? and `year`=?
+                                                    and CTP.time_slot_id in (
+                                                    select time_slot_id
+                                                    from class_time_place natural join teaches
+                                                    where instructor_id=?
+                                                    )");
+
+            $stmt_check_teacher_section_conflict->free_result();
+            $stmt_check_teacher_section_conflict->bind_param("sisis",$values[0], $values[1], $values[2], $values[3],$insId);
+            $stmt_check_teacher_section_conflict->execute();
+            $conflict_result = $stmt_check_teacher_section_conflict->get_result();
+            if($conflict_result->num_rows){
+                $sta = false;
+                $stmt_check_teacher_section_conflict->free_result();
+                $conn->rollback();
+                echo "<script>alert('".$error_mes_insert_conflict2."')</script>";
+                continue 2;
+            }
+
+            $stmt_insert_teaches->free_result();
+            $stmt_insert_teaches->bind_param("ssisi", $insId, $values[0], $values[1], $values[2], $values[3]);
+            $result = $stmt_insert_teaches->execute();
+            if(!$result){
+                $sta = false;
+                $conn->rollback();
+                echo "<script>alert('".$error_mes_insert."')</script>";
+                continue 2;
+            }
+
+        }
+
+        $conn->commit();
     }
+    if($sta){
+        echo "<script>alert('导入成功')</script>";
+    }else{
+        echo "<script>alert('导入结束')</script>";
+    }
+//mysqli_error($conn);
 }
 
 function testLoader($conn){
