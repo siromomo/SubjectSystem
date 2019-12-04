@@ -617,4 +617,34 @@ function teacherLoader($conn,$filename){
     }
 }
 
+function scoreLoader($role,$filename,$course_id,$sec_id,$semester,$year){
+//    mysqli_set_charset($conn, "utf8");
+//    var_dump($conn);
+//    echo "----------------\n";
+    $sheet = basicExcelLoader($filename);
+//    var_dump($conn);
+//    echo "----------------\n";
+    $highestRow = $sheet->getHighestRow();
+//    var_dump($conn);
+//    echo "----------------\n";
+    $sta = true;
+    for($i = 2; $i <= $highestRow; $i++){
+        $student_id = $sheet->getCell("A".$i)->getValue();
+        $score = $sheet->getCell("B".$i)->getValue();
+        if(empty($student_id))
+            break;
+//        var_dump($conn);
+//        echo "----------------\n";
+        /*如果用同一个连接为每行插入的化，查询语句会报Commands out of sync错误*/
+        $conn = connectToDB("127.0.0.1",$role,$role);
+        if(!commit_grade_for_one_student($conn,$student_id,$course_id,$sec_id,$semester,$year,$score)){
+            $sta = false;
+        }
+        $conn->close();
+    }
+    if($sta){
+        echo "<script>alert('导入成功')</script>";
+    }
+
+}
  ?>

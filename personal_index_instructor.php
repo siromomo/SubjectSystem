@@ -95,7 +95,7 @@ $app_list = get_app_for_sec_set($conn, $sec_set);
                     <th>当前人数</th>
                     <th>课程名称</th>
                     <th>上课时间</th>
-                    <th>花名册</th>
+                    <th>操作</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -113,7 +113,11 @@ $app_list = get_app_for_sec_set($conn, $sec_set);
                             <td>$sec->class_to_time_str</td>
                             <td><a class='btn btn-default' 
                             href='section_member_list.php?sec_id=$sec->sec_id&course_id=$sec->course_id&semester=$sec->semester&year=$sec->year'>
-                            查看花名册</a></td>
+                            查看花名册</a>
+                            <a class='btn btn-default' 
+                            href='log_marks.php?sec_id=$sec->sec_id&course_id=$sec->course_id&semester=$sec->semester&year=$sec->year'>
+                            登分</a></td>
+                            
                           </tr>";
                 }
                 ?>

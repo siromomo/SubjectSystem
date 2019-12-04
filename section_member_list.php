@@ -15,7 +15,7 @@ if(!isset($_SESSION['st_id']) || !isset($_GET['sec_id'])) {
 
 $role = $_SESSION['role'];
 $st_id = $_SESSION['st_id'];
-$conn = connectToDB("localhost", $role, $role, "course_select_system");
+$conn = connectToDB("127.0.0.1", $role, $role, "course_select_system");
 
 $sec_id = $_GET['sec_id'];
 $course_id = $_GET['course_id'];

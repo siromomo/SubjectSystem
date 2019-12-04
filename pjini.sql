@@ -162,6 +162,7 @@ grant update on `course_select_system`.`takes` to teacher;
 grant update on `course_select_system`.`application` to teacher;
 grant delete on `course_select_system`.`section` to teacher;
 grant update on `course_select_system`.`section` to student;
+grant update on `course_select_system`.`student` to teacher;
 flush privileges;
 
 alter table takes add unique(student_id, sec_id, course_id, semester, year);

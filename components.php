@@ -846,3 +846,126 @@ function get_member_for_section($conn, $sec_id, $course_id, $semester, $year){
     $stmt->free_result();
     return $mem_list;
 }
+
+function commit_grade_for_one_student($conn,$student_id,$course_id,$sec_id,$semester,$year,$grade){
+    $cre = 0;
+    switch ($grade){
+        case "A":
+            $cre = 4.0;
+            break;
+        case "A-":
+            $cre = 3.7;
+            break;
+        case "B+":
+            $cre = 3.3;
+            break;
+        case "B":
+            $cre = 3.0;
+            break;
+        case "B-":
+            $cre = 2.7;
+            break;
+        case "C+":
+            $cre = 2.3;
+            break;
+        case "C":
+            $cre = 2.0;
+            break;
+        case "C-":
+            $cre = 1.7;
+            break;
+        case "D+":
+            $cre = 1.3;
+            break;
+        case "D":
+            $cre = 1.0;
+            break;
+        case "F":
+            $cre = 0.0;
+            break;
+        default:
+            echo "<script>alert('学生: ".$student_id."的成绩格式错误')</script>";
+            return false;
+    }
+
+//    var_dump($conn);
+//    echo "------------";
+    $conn->autocommit(false);
+
+
+    $stmt_check = $conn->prepare("select grade from takes where student_id=? and course_id=? and sec_id=? and semester=? and `year`=?");
+    $sec_id = intval($sec_id);
+    $year = intval($year);
+//    var_dump($student_id);
+//    var_dump($course_id);
+//    var_dump($sec_id);
+//    var_dump($semester);
+//    var_dump($year);
+//    var_dump($conn);
+//    echo "------------";
+    $stmt_check->bind_param("ssisi",$student_id,$course_id,$sec_id,$semester,$year);
+    $stmt_check->execute();
+    $check_grade = "";
+    $stmt_check->bind_result($check_grade);
+    $stmt_check->fetch();
+    if(!(strlen($check_grade)==0 || empty($check_grade))){
+        echo "<script>alert('学生".$student_id."的成绩已经导入，联系管理员更改')</script>";
+        return false;
+    }
+    $stmt_check->free_result();
+
+    $stmt = $conn->prepare("update takes set grade = ? where student_id=? and course_id=? and sec_id=? and semester=? and year=?");
+    $stmt->bind_param("sssisi",$grade,$student_id,$course_id,$sec_id,$semester,$year);
+    $r = $stmt->execute();
+    if(!$r){
+        $conn->rollback();
+        echo "<script>alert('此学生成绩导入失败')</script>";
+        alert_error($conn);
+        $stmt->free_result();
+        return false;
+    }
+    $stmt->free_result();
+    //修改学生绩点
+    $stmt_get_old_credits = $conn->prepare("select total_credit,gpa from student where student_id=?");
+    $stmt_get_course_credit = $conn->prepare("select credit from course where course_id=?");
+    $stmt_update_credit_gpa = $conn->prepare("update student set total_credit=?,gpa=? where student_id=?");
+
+    $stmt_get_old_credits->bind_param("s",$student_id);
+    $stmt_get_old_credits->execute();
+    $old_credit = 0;
+    $old_gpa = 0.0;
+    $stmt_get_old_credits->bind_result($old_credit,$old_gpa);
+    $stmt_get_old_credits->fetch();
+    $stmt_get_old_credits->free_result();
+
+    $stmt_get_course_credit->bind_param("s",$course_id);
+    $stmt_get_course_credit->execute();
+    $course_cre = 0;
+    $stmt_get_course_credit->bind_result($course_cre);
+    $stmt_get_course_credit->fetch();
+    $stmt_get_course_credit->free_result();
+
+    $new_total_credits = $old_credit + $course_cre;
+    $new_gpa = ($old_credit * $old_gpa + $cre * $course_cre) / $new_total_credits;
+    $new_gpa = sprintf("%.2f",$new_gpa);
+
+    $new_gpa = (double)$new_gpa;
+
+//    var_dump($student_id);
+//    var_dump($new_total_credits);
+//    var_dump($new_gpa);
+    $stmt_update_credit_gpa->bind_param("ids",$new_total_credits,$new_gpa,$student_id);
+    $r = $stmt_update_credit_gpa->execute();
+    if(!$r){
+        $conn->rollback();
+        echo "<script>alert('此学生学分与绩点导入失败')</script>";
+        alert_error($conn);
+        $stmt_update_credit_gpa->free_result();
+        return false;
+    }
+    $stmt_update_credit_gpa->free_result();
+
+    $conn->commit();
+    $conn->autocommit(true);
+    return true;
+}
