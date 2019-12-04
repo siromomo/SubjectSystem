@@ -117,6 +117,7 @@ $paper_list = get_paper_list($conn, $st_id);
                 <div class="list-group-item"><h4>入学时间：<?php echo $enroll_time;?></h4></div>
                 <div class="list-group-item"><h4>毕业时间：<?php echo $graduate_time;?></h4></div>
             </div>
+            <a class="btn btn-default btn-group-justified" href="see_my_score.php">查看成绩</a>
         </div>
         <div class="col-sm-9">
             <table class="table table-striped">
