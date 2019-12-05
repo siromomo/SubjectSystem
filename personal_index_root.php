@@ -55,7 +55,7 @@ $conn = connectToDB("127.0.0.1","collegeadmin","collegeadmin");
         </div>
     </div>
     <div class="tab-content">
-        <div class="tab-pane fade in active" id="edit_students">
+        <div class="tab-pane active" id="edit_students">
             <br/>
             <form class="form-inline" role="form" method="post" enctype="multipart/form-data" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel">
                 <div class="form-group">
@@ -125,7 +125,7 @@ $conn = connectToDB("127.0.0.1","collegeadmin","collegeadmin");
                                         <td>{$row["gpa"]}<input name='new_gpa' value='{$row["gpa"]}' type='hidden'></td>
                                         <td>{$row["enroll_time"]}<input name='new_etime' value='{$row["enroll_time"]}' type='hidden'></td>
                                         <td>{$row["graduate_time"]}<input name='new_gtime' value='{$row["graduate_time"]}' type='hidden'></td>
-                                        <button id='delete_personal_info_btn' name='delete_personal_info_btn' class='form-control btn btn-default' value='delete' type='submit'>删除</button>
+                                        <button id='delete_personal_info_btn' name='delete_personal_info_btn' class='form-control btn btn-primary' value='delete' type='submit'>删除</button>
                                       </tr></form>";
                         }
 
@@ -172,19 +172,6 @@ $conn = connectToDB("127.0.0.1","collegeadmin","collegeadmin");
                             $course_result = $stmt_fine_course->get_result();
                             $row3 = $course_result->fetch_assoc();
                             $course_des = $row2["course_id"].".".$row2["sec_id"]." ".$row3["course_name"]." ".$row2["year"]." ".$row2["semester"];
-//                            echo "<form class='tr' method='post' role='form'>
-//                                       <span class='td'>{$course_des}</span>
-//                                       <span class='td'><input name='new_grade' value='{$row2["grade"]}' class='form-control'></span>
-//                                       <span class='td'><button name='change_takes_info_btn' class='form-control btn btn-primary' type='submit' value='change_grade'>修改成绩</button></span>
-//                                  ";
-//                            if(empty($row2["grade"])||strlen($row2["grade"])==0){
-//                                echo "<span class='td'><button name='delete_takes_info_btn' class='form-control btn btn-default' type='submit' value='drop_class'>退课</button></span>
-//                                 </form>";
-//                            }else{
-//                                echo "<span class='td'><button id='delete_takes_info_btn' class='form-control btn btn-default disabled' type='submit'>退课</button></span>
-//                                </form>";
-//                            }
-
 
                             echo "<tr>
                                         <th class='form-group'>{$course_des}</th>
@@ -206,11 +193,6 @@ $conn = connectToDB("127.0.0.1","collegeadmin","collegeadmin");
 
                     }
                     $stmt_search_takes_info->free_result();
-                }
-                ?>
-                <?php
-                if(!empty($_POST["grade_2"])){
-                    echo "<script>alert('测试成功')</script>";
                 }
                 ?>
                 </tbody>
@@ -277,7 +259,7 @@ $conn = connectToDB("127.0.0.1","collegeadmin","collegeadmin");
             }
         }
         ?>
-        <div class="tab-pane fade" id="edit_teachers">
+        <div class="tab-pane " id="edit_teachers">
             <br/>
             <form class="form-inline" role="form" method="post" enctype="multipart/form-data" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel">
                 <div class="form-group">
@@ -285,6 +267,140 @@ $conn = connectToDB("127.0.0.1","collegeadmin","collegeadmin");
                 </div>
                 <button type="submit" class="btn btn-default">导入</button>
             </form>
+            <hr style="height:1px;border:none;border-top:1px solid 	#D3D3D3;" />
+
+            <form class="form-inline" role="form" method="post" id="search_form">
+                <div class="input-group input-group-lg">
+                    <input id="ins_search" type="text" class="form-control" placeholder="输入工号" name="ins_search">
+                    <span class="btn btn-default input-group-addon" id="ins_search_btn">搜索</span>
+                </div>
+            </form>
+
+            <caption class="table panel-heading"><h4>个人信息</h4></caption>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>工号</th>
+                    <th>姓名</th>
+                    <th>入职时间</th>
+                    <th>离职时间</th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php
+                if(isset($_GET["ins_search"])){
+                    $stmt_ins_info = $conn->prepare("select * from instructor where instructor_id = ?");
+                    $stmt_ins_info->bind_param("s",$_GET["ins_search"]);
+                    $stmt_ins_info->execute();
+                    $ins_info_result = $stmt_ins_info->get_result();
+                    if($ins_info_result->num_rows == 0){
+                        echo "<script>alert('无此工号教师')</script>";
+                        echo '<script>window.location.href="personal_index_root.php#edit_teachers"</script>';
+                    }else{
+                        $row = $ins_info_result->fetch_assoc();
+
+                        if(empty($row["quit_time"])){
+                            echo "
+                                      <form role='form' method='post'>
+                                      <tr>
+                                        <td>{$row["instructor_id"]}</td>
+                                        <td><input name='new_ins_name' class='form-control' value='{$row["instructor_name"]}'></td>
+                                        <td><input name='new_ins_htime' class='form-control' value='{$row["hire_time"]}'></td>
+                                        <td><input name='new_ins_qtime' class='form-control' value='{$row["quit_time"]}'></td>
+                                      </tr>
+                                      <input type='hidden' name='ins_id' value='{$row["instructor_id"]}'>
+                                      <tr>  
+                                         <button id='change_ins_info_btn' name='change_ins_info_btn' class='form-group btn btn-primary' value='change' type='submit'>修改</button>
+                                        <button id='delete_ins_info_btn' name='delete_ins_info_btn' class='form-group btn btn-default' value='delete' type='submit'>删除</button>
+                                      </tr>
+                                      </form>";
+                        }else{
+                            echo "<form role='form' method='post'><tr>
+                                        <td>{$row["instructor_id"]}<input name='stu_id' value='{$row["instructor_id"]}' type='hidden'></td>
+                                        <td>{$row["instructor_name"]}<input name='new_name' value='{$row["instructor_name"]}' type='hidden'></td>
+                                        <td>{$row["hire_time"]}<input name='new_credit' value='{$row["hire_time"]}' type='hidden'></td>
+                                        <td>{$row["quit_time"]}<input name='new_gpa' value='{$row["quit_time"]}' type='hidden'></td>
+                                        <button id='delete_ins_info_btn' name='delete_ins_info_btn' class='form-control btn btn-primary' value='delete' type='submit'>删除</button>
+                                      </tr></form>";
+                        }
+
+                    }
+                    $stmt_ins_info->free_result();
+                }
+                ?>
+                <?php
+                if(!empty($_POST["change_ins_info_btn"])){
+                    $instructor = new Instructor($_POST["ins_id"],$_POST["new_ins_name"],$_POST["new_ins_htime"],$_POST["new_ins_qtime"]);
+                    update_instructor($conn,$instructor);
+                    echo "<script language=JavaScript> location.replace(location.href);</script>";
+                }
+                if(!empty($_POST["delete_ins_info_btn"])){
+                    if(delete_teacher($conn,$_POST["ins_id"]))
+                        echo '<script>window.location.href="personal_index_root.php#edit_teachers"</script>';
+                }
+                ?>
+                </tbody>
+            </table>
+
+            <caption class="table panel-heading"><h4>任课信息</h4></caption>
+            <table class="table" role="form" method="post" id="personal_takes_form">
+                <thead>
+                <tr>
+                    <th>任课课程</th>
+                    <th>任课老师</th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php
+                if(isset($_GET["ins_search"])){
+                    $stmt_teaches_info = $conn->prepare("select * from teaches natural join course where instructor_id = ?");
+                    $stmt_teaches_info->bind_param("s",$_GET["ins_search"]);
+                    $stmt_teaches_info->execute();
+                    $teaches_result = $stmt_teaches_info->get_result();
+                    if($teaches_result->num_rows == 0){
+
+                    }else{
+                        while ($row = $teaches_result->fetch_assoc()){
+                            $course_des = $row["course_id"].".".$row["sec_id"]." ".$row["course_name"]." ".$row["year"]." ".$row["semester"];
+
+                            $stmt_search_college = $conn->prepare("select instructor_id,instructor_name from teaches natural join instructor
+                                                                          where course_id=? and sec_id=? and semester=? and `year`=?");
+                            $stmt_search_college->bind_param("sisi",$row["course_id"],$row["sec_id"],$row["semester"],$row["year"]);
+                            $stmt_search_college->execute();
+                            $colleague_result = $stmt_search_college->get_result();
+                            $ins_list = "";
+                            $ins_num = $colleague_result->num_rows;
+                            while ($row_il = $colleague_result->fetch_assoc()){
+                                $ins_list = $ins_list." ".$row_il["instructor_id"].$row_il["instructor_name"];
+                            }
+                            $stmt_search_college->free_result();
+
+                            echo "<tr>
+                                    <td>{$course_des}</td>
+                                    <td>{$ins_list}</td>
+                                    <input type='hidden' value='{$_GET["ins_search"]}'>
+                                    <input type='hidden' value='{$row["course_id"]}'>
+                                    <input type='hidden' value='{$row["sec_id"]}'>
+                                    <input type='hidden' value='{$row["semester"]}'>
+                                    <input type='hidden' value='{$row["year"]}'>
+                                 ";
+
+                            if($ins_num > 1){
+                                echo "<td><button name='move_out_btn' class='form-control btn btn-primary btn-sm' type='button'>移除</button></td></tr>";
+                            }else{
+                                echo "<td><button class='form-control btn btn-default disabled btn-sm' type='button'>移除</button></td></tr>";
+                            }
+
+                        }
+
+                    }
+                }
+                ?>
+                </tbody>
+            </table>
+
+
+
         </div>
         <?php
         if(isset($_FILES['file_tea'])){
@@ -293,7 +409,7 @@ $conn = connectToDB("127.0.0.1","collegeadmin","collegeadmin");
             }
         }
         ?>
-        <div class="tab-pane fade" id="edit_sections">
+        <div class="tab-pane" id="edit_sections">
             <br/>
             <form class="form-inline" role="form" method="post" enctype="multipart/form-data" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel">
                 <div class="form-group">
@@ -345,6 +461,13 @@ $(function () {
         else
             window.location.href = "personal_index_root.php?stu_search="+$("#stu_search").val();
     });
+    $("#ins_search_btn").click(function () {
+        if($("#ins_search").val() == "")
+            window.location.href = "personal_index_root.php#edit_teachers";
+        else
+            window.location.href = "personal_index_root.php?ins_search="+$("#ins_search").val()+"#edit_teachers";
+
+    })
 
     $("[name='change_takes_info_btn']").click(function () {
         var th = $(this).parent("th");
@@ -460,6 +583,34 @@ $(function () {
                     }
                 }
         })
+    })
+    $("[name='move_out_btn']").click(function () {
+        var td = $(this).parent("td");
+        var year = td.prev();
+        var semester = year.prev();
+        var sec_id = semester.prev();
+        var course_id = sec_id.prev();
+        var instructor_id = course_id.prev();
+        $.ajax({
+            url:"/SubjectSystem/tool_remove_ins_from_sec.php?instructor_id="+instructor_id.val()+"&course_id="+course_id.val()+"&sec_id="+sec_id.val()+"&semester="+semester.val()+"&year="+year.val(),
+            success:
+            function (data) {
+                switch (data) {
+                    case "0":
+                        window.location.reload();
+                        break;
+                    case "1":
+                        alert("数据库连接失败");
+                        break;
+                    case "2":
+                        alert("处理失败");
+                        break;
+                    default:
+                        alert("未知错误 "+data);
+                }
+            }
+        })
+
     })
 
 })

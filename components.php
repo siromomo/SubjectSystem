@@ -141,6 +141,20 @@ class Paper{
     }
 }
 
+class Instructor{
+    var $instructor_id;
+    var $instructor_name;
+    var $hire_time;
+    var $quit_time;
+
+    function __construct($instructor_id,$instructor_name,$hire_time,$quit_time){
+        $this->instructor_id = $instructor_id;
+        $this->instructor_name = $instructor_name;
+        $this->hire_time = $hire_time;
+        $this->quit_time = $quit_time;
+    }
+}
+
 function alert_error($conn, $err = null){
     if($err === null) {
         $err = mysqli_error($conn);
@@ -1049,4 +1063,37 @@ function delete_student_personal_info($conn,$id){
     $conn->commit();
     $conn->autocommit(true);
     return true;
+}
+
+function update_instructor($conn,$instructor){
+    $stmt = $conn->prepare("update instructor set instructor_name=?,hire_time=?,quit_time=null where instructor_id=?");
+    $stmt2 = $conn->prepare("update instructor set instructor_name=?,hire_time=?,quit_time=? where instructor_id=?");
+    if(empty($instructor->quit_time)||strlen($instructor->quit_time)==0){
+        $stmt->bind_param("sss",$instructor->instructor_name,$instructor->hire_time,$instructor->instructor_id);
+        $r = $stmt->execute();
+    }else{
+        $stmt2->bind_param("ssss",$instructor->instructor_name,$instructor->hire_time,$instructor->quit_time,$instructor->instructor_id);
+        $r = $stmt2->execute();
+    }
+    if(!$r){
+        echo "<script>alert('更改此教师信息失败')</script>";
+        return false;
+    }
+    $stmt2->free_result();
+    $stmt->free_result();
+    return true;
+}
+
+function delete_teacher($conn,$instructor_id){
+    $stmt = $conn->prepare("delete from instructor where instructor_id=?");
+    $stmt->bind_param("s",$instructor_id);
+    $r = $stmt->execute();
+//    var_dump($r);
+    if(!$r){
+        echo "<script>alert('此教师有开课记录，无法删除')</script>";
+        return false;
+    }
+    $stmt->free_result();
+    return true;
+
 }
