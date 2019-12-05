@@ -237,25 +237,26 @@ $conn = connectToDB("127.0.0.1","collegeadmin","collegeadmin");
                     }else{
                         while ($row4 = $appli_result->fetch_assoc()){
                             $stmt_fine_course = $conn->prepare("select course_name from course where course_id = ?");
-                            $stmt_fine_course->bind_param("s",$row2["course_id"]);
+                            $stmt_fine_course->bind_param("s",$row4["course_id"]);
                             $stmt_fine_course->execute();
                             $course_result = $stmt_fine_course->get_result();
                             $row5 = $course_result->fetch_assoc();
                             $course_des = $row4["course_id"].".".$row4["sec_id"]." ".$row5["course_name"]." ".$row4["year"]." ".$row4["semester"];
 
-                            if($row4["appii_status"] == "未处理"){
+                            if($row4["appii_status"] == ""){
                                 echo "<tr>
-                                        <th>{$course_des}</th>
-                                        <th><textarea class='form-control' rows='5'>{$row4["appli_content"]}</textarea></th>
-                                        <th>{$row4["appii_status"]}</th>
-                                        <th><button id='agree_btn' class='form-control btn btn-default' type='button'>通过</button></th>
-                                        <th><button id='reject_btn' class='form-control btn btn-default' type='button'>驳回</button></th>
+                                        <td>{$course_des}</td>
+                                        <td><textarea class='form-control' rows='5'>{$row4["appli_content"]}</textarea></td>
+                                        <td>未处理</td>
+                                        <input type='hidden' value='{$row4["appli_id"]}'>
+                                        <td><button name='agree_btn' class='form-control btn btn-primary' type='button'>通过</button></td>
+                                        <td><button name='reject_btn' class='form-control btn btn-default' type='button'>驳回</button></td>
                                       </tr>";
                             }else{
                                 echo "<tr>
-                                        <th>{$course_des}</th>
-                                        <th><textarea class='form-control' rows='5'>{$row4["appli_content"]}</textarea></th>
-                                        <th>{$row4["appii_status"]}</th>
+                                        <td>{$course_des}</td>
+                                        <td><textarea class='form-control' rows='5'>{$row4["appli_content"]}</textarea></td>
+                                        <td>{$row4["appii_status"]}</td>
                                       </tr>";
                             }
 
@@ -407,10 +408,57 @@ $(function () {
                         break;
                     default:
                         alert("未知错误 "+data);
-
                 }
 
             }
+        })
+    })
+    $("[name='agree_btn']").click(function () {
+        var td = $(this).parent("td");
+        var appli_id = td.prev().val();
+
+        $.ajax({
+            url:"/SubjectSystem/tool_admin_handleAppli.php?appli_id="+appli_id+"&status=通过",
+            success:
+                function (data) {
+                    switch (data) {
+                        case "0":
+                            window.location.reload();
+                            break;
+                        case "1":
+                            alert("数据库连接失败");
+                            break;
+                        case "2":
+                            alert("处理失败");
+                            break;
+                        default:
+                            alert("未知错误 "+data);
+                    }
+                }
+        })
+    })
+    $("[name='reject_btn']").click(function () {
+        var td = $(this).parent("td");
+        var appli_id = td.prev().prev().val();
+
+        $.ajax({
+            url:"/SubjectSystem/tool_admin_handleAppli.php?appli_id="+appli_id+"&status=拒绝",
+            success:
+                function (data) {
+                    switch (data) {
+                        case "0":
+                            window.location.reload();
+                            break;
+                        case "1":
+                            alert("数据库连接失败");
+                            break;
+                        case "2":
+                            alert("处理失败");
+                            break;
+                        default:
+                            alert("未知错误 "+data);
+                    }
+                }
         })
     })
 

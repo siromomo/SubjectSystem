@@ -206,9 +206,7 @@ $paper_list = get_paper_list($conn, $st_id);
                             </form>";
                     }
                     else{
-                        echo "<a href='make_application_student.php
-                                                ?course_id=$sec->course_id&sec_id=$sec->sec_id
-                                                &semester=$sec->semester&year=$sec->year' 
+                        echo "<a href='make_application_student.php?course_id=$sec->course_id&sec_id=$sec->sec_id&semester=$sec->semester&year=$sec->year' 
                                                 class='btn btn-primary'>申请</a>";
                     }
 
