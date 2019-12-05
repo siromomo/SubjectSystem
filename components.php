@@ -1095,5 +1095,12 @@ function delete_teacher($conn,$instructor_id){
     }
     $stmt->free_result();
     return true;
-
+}
+function admin_get_section_course($conn,$course_id){
+    $stmt = $conn->prepare(
+        "select sec_id, semester, year, start_week, end_week, number, selected_num, course.course_id, course_name, exam_id 
+from `section` natural join course where course_id=?");
+    $stmt->bind_param("s",$course_id);
+    $section_set = get_section_set($conn, $stmt);
+    return $section_set;
 }

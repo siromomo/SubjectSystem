@@ -267,8 +267,8 @@ $conn = connectToDB("127.0.0.1","collegeadmin","collegeadmin");
                 </div>
                 <button type="submit" class="btn btn-default">导入</button>
             </form>
+            <br/>
             <hr style="height:1px;border:none;border-top:1px solid 	#D3D3D3;" />
-
             <form class="form-inline" role="form" method="post" id="search_form">
                 <div class="input-group input-group-lg">
                     <input id="ins_search" type="text" class="form-control" placeholder="输入工号" name="ins_search">
@@ -390,17 +390,12 @@ $conn = connectToDB("127.0.0.1","collegeadmin","collegeadmin");
                             }else{
                                 echo "<td><button class='form-control btn btn-default disabled btn-sm' type='button'>移除</button></td></tr>";
                             }
-
                         }
-
                     }
                 }
                 ?>
                 </tbody>
             </table>
-
-
-
         </div>
         <?php
         if(isset($_FILES['file_tea'])){
@@ -409,6 +404,7 @@ $conn = connectToDB("127.0.0.1","collegeadmin","collegeadmin");
             }
         }
         ?>
+
         <div class="tab-pane" id="edit_sections">
             <br/>
             <form class="form-inline" role="form" method="post" enctype="multipart/form-data" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel">
@@ -417,6 +413,61 @@ $conn = connectToDB("127.0.0.1","collegeadmin","collegeadmin");
                 </div>
                 <button type="submit" class="btn btn-default">导入</button>
             </form>
+            <br/>
+            <hr style="height:1px;border:none;border-top:1px solid 	#D3D3D3;" />
+
+            <form class="form-inline" role="form" method="post">
+                <div class="input-group input-group-lg">
+                    <input id="course_search" type="text" class="form-control" placeholder="输入课程号" name="course_search">
+                    <span class="btn btn-default input-group-addon" id="course_search_btn">搜索</span>
+                </div>
+            </form>
+            <caption class="table panel-heading"><h4>开课信息</h4></caption>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>课程id</th>
+                    <th>课程段id</th>
+                    <th>学期</th>
+                    <th>开始周</th>
+                    <th>结束周</th>
+                    <th>人数限制</th>
+                    <th>当前人数</th>
+                    <th>课程名称</th>
+                    <th>上课时间</th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php
+                if(isset($_GET["course_search"])){
+                    $sec_set = admin_get_section_course($conn,$_GET["course_search"]);
+                    foreach ($sec_set as $sec){
+                        echo "<tr>
+                            <td>$sec->course_id</td>
+                            <td>$sec->sec_id</td>
+                            <td>$sec->semester</td>
+                            <td>$sec->start_week</td>
+                            <td>$sec->end_week</td>
+                            <td>$sec->number</td>
+                            <td>$sec->selected_num</td>
+                            <td>$sec->course_name</td>
+                            <td>$sec->class_to_time_str</td>
+                            <td><form action='personal_index_student.php'>
+                                <input type='hidden' name='course_id' value='$sec->course_id'>
+                                <input type='hidden' name='sec_id' value='$sec->sec_id'>
+                                <input type='hidden' name='semester' value='$sec->semester'>
+                                <input type='hidden' name='year' value='$sec->year'>
+                                <input type='hidden' name='choose_or_drop' value='drop'>
+                                <input type='submit' value='删除' class='btn btn-primary' id='delete_lesson'>
+                            </form></td>
+                          </tr>";
+                    }
+
+                }
+                ?>
+
+                </tbody>
+            </table>
         </div>
         <?php
         if(isset($_FILES['file_sec'])){
@@ -467,6 +518,12 @@ $(function () {
         else
             window.location.href = "personal_index_root.php?ins_search="+$("#ins_search").val()+"#edit_teachers";
 
+    });
+    $("#course_search_btn").click(function () {
+        if($("#course_search").val() == "")
+            window.location.href = "personal_index_root.php#edit_sections";
+        else
+            window.location.href = "personal_index_root.php?course_search="+$("#course_search").val()+"#edit_sections";
     })
 
     $("[name='change_takes_info_btn']").click(function () {
