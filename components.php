@@ -969,3 +969,84 @@ function commit_grade_for_one_student($conn,$student_id,$course_id,$sec_id,$seme
     $conn->autocommit(true);
     return true;
 }
+
+
+function update_student_personal_info($conn,$student){
+    $stmt_not_graduate = $conn->prepare("update student set student_name=?,total_credit=?,gpa=?,enroll_time=?,graduate_time=null where student_id=?");
+    $stmt_graduated = $conn->prepare("update student set student_name=?,total_credit=?,gpa=?,enroll_time=?,graduate_time=? where student_id=?");
+    if(empty($student->graduate_time)||strlen($student->graduate_time) == 0){
+        $stmt_not_graduate->bind_param("sidss",$student->student_name,$student->total_credit,$student->gpa,$student->enroll_time,$student->student_id);
+        $r = $stmt_not_graduate->execute();
+    }else{
+        $stmt_graduated->bind_param("sidsss",$student->student_name,$student->total_credit,$student->gpa,$student->enroll_time,$student->graduate_time,$student->student_id);
+        $r = $stmt_graduated->execute();
+    }
+    if(!$r){
+        echo "<script>alert('此学生信息更新失败')</script>";
+    }
+}
+
+function delete_student_personal_info($conn,$id){
+    $conn->autocommit(false);
+    //删除申请
+    $stmt_delete_in_appli = $conn->prepare("delete from application where student_id = ?");
+    $stmt_delete_in_appli->bind_param("s",$id);
+//    var_dump($stmt_delete_in_appli);
+    $r = $stmt_delete_in_appli->execute();
+//    var_dump($stmt_delete_in_appli);
+    if(!$r){
+        $conn->rollback();
+        $stmt_delete_in_appli->free_result();
+        echo "<script>alert('删除此学生的申请记录失败，删除失败')</script>";
+        return false;
+    }
+    $stmt_delete_in_appli->free_result();
+    //删除takes
+    $stmt_takes = $conn->prepare("delete from takes where student_id = ?");
+    $stmt_takes->bind_param("s",$id);
+    $r = $stmt_takes->execute();
+    if(!$r){
+        $conn->rollback();
+        $stmt_takes->free_result();
+        echo "<script>alert('删除此学生的选课记录失败，删除失败')</script>";
+        return false;
+    }
+    $stmt_takes->free_result();
+    //删除drops
+    $stmt_drops = $conn->prepare("delete from drops where student_id = ?");
+    $stmt_drops->bind_param("s",$id);
+    $r = $stmt_drops->execute();
+    if(!$r){
+        $conn->rollback();
+        $stmt_drops->free_result();
+        echo "<script>alert('删除此学生的退课记录失败，删除失败')</script>";
+        return false;
+    }
+    $stmt_drops->free_result();
+    //删除参加考试表
+    $stmt_take_exam = $conn->prepare("delete from take_exam where student_id = ?");
+    $stmt_take_exam->bind_param("s",$id);
+    $r = $stmt_take_exam->execute();
+    if(!$r){
+        $conn->rollback();
+        $stmt_take_exam->free_result();
+        echo "<script>alert('删除此学生的考试记录失败，删除失败')</script>";
+        return false;
+    }
+    $stmt_take_exam->free_result();
+    //删除学生
+    $stmt_student = $conn->prepare("delete from student where student_id = ?");
+    $stmt_student->bind_param("s",$id);
+    $r = $stmt_student->execute();
+    if(!$r){
+        $conn->rollback();
+        $stmt_student->free_result();
+        echo "<script>alert('删除此学生的信息记录失败，删除失败')</script>";
+        return false;
+    }
+    $stmt_student->free_result();
+
+    $conn->commit();
+    $conn->autocommit(true);
+    return true;
+}
