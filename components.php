@@ -1104,3 +1104,196 @@ from `section` natural join course where course_id=?");
     $section_set = get_section_set($conn, $stmt);
     return $section_set;
 }
+
+function import_one_student($conn,$student){
+    $stmt = $conn->prepare("insert into student (student_id,student_name,total_credit,gpa,enroll_time,graduate_time) values (?,?,?,?,?,?)");
+    $stmt_null = $conn->prepare("insert into student (student_id,student_name,total_credit,gpa,enroll_time,graduate_time) values (?,?,?,?,?,null)");
+    if(empty($student->graduate_time)||strlen($student->graduate_time)==0){
+        $stmt_null->bind_param("ssids",$student->student_id,$student->student_name,$student->total_credit,$student->gpa,$student->enroll_time);
+        $r = $stmt_null->execute();
+    }else{
+        $stmt->bind_param("ssidss",$student->student_id,$student->student_name,$student->total_credit,$student->gpa,$student->enroll_time,$student->graduate_time);
+        $r = $stmt->execute();
+    }
+    if(!$r){
+        echo "<script>alert('添加学生失败，检查学生学号')</script>";
+        return false;
+    }
+    return true;
+}
+function import_one_instructor($conn,$instructor){
+    $stmt = $conn->prepare("insert into instructor (instructor_id,instructor_name,hire_time,quit_time) values (?,?,?,?)");
+    $stmt_null = $conn->prepare("insert into instructor (instructor_id,instructor_name,hire_time,quit_time) values (?,?,?,null)");
+    if(empty($instructor->quit_time)||strlen($instructor->quit_time)==0){
+        $stmt_null->bind_param("sss",$instructor->instructor_id,$instructor->instructor_name,$instructor->hire_time);
+        $r = $stmt_null->execute();
+    }else{
+        $stmt->bind_param("ssss",$instructor->instructor_id,$instructor->instructor_name,$instructor->hire_time,$instructor->quit_time);
+        $r = $stmt->execute();
+    }
+    if(!$r){
+        echo "<script>alert('添加教师失败，检查教师工号')</script>";
+        return false;
+    }
+    return true;
+}
+function delete_section($conn,$course_id,$sec_id,$semester,$year){//TODO 时间限制
+    $conn->autocommit(false);
+    $stmt_check = $conn->prepare("select grade from takes where course_id=? and sec_id=? and semester=? and `year`=?");
+    $stmt_check->bind_param("sisi",$course_id,$sec_id,$semester,$year);
+    $stmt_check->execute();
+    $check_result = $stmt_check->get_result();
+    if($check_result->num_rows){
+        $conn->rollback();
+        echo "此课程已经登分，无法删除";
+        return false;
+    }
+    $stmt_check->free_result();
+    //删除申请
+    $stmt_del_appli = $conn->prepare("delete from application where course_id=? and sec_id=? and semester=? and `year`=?");
+    $stmt_del_appli->bind_param("sisi",$course_id,$sec_id,$semester,$year);
+    $r = $stmt_del_appli->execute();
+    if(!$r){
+        $conn->rollback();
+        echo "删除失败，请检查";
+        return false;
+    }
+    $stmt_del_appli->free_result();
+    //删除class_time_place
+    $stmt_del_ctp = $conn->prepare("delete from class_time_place where course_id=? and sec_id=? and semester=? and `year`=?");
+    $stmt_del_ctp->bind_param("sisi",$course_id,$sec_id,$semester,$year);
+    $r = $stmt_del_ctp->execute();
+    if(!$r){
+        $conn->rollback();
+        echo "删除失败，请检查";
+        return false;
+    }
+    $stmt_del_ctp->free_result();
+    //删除drops
+    $stmt_del_drops = $conn->prepare("delete from drops where course_id=? and sec_id=? and semester=? and `year`=?");
+    $stmt_del_drops->bind_param("sisi",$course_id,$sec_id,$semester,$year);
+    $r = $stmt_del_drops->execute();
+    if(!$r){
+        $conn->rollback();
+        echo "删除失败，请检查";
+        return false;
+    }
+    $stmt_del_drops->free_result();
+    //删除takes
+    $stmt_del_takes = $conn->prepare("delete from takes where course_id=? and sec_id=? and semester=? and `year`=?");
+    $stmt_del_takes->bind_param("sisi",$course_id,$sec_id,$semester,$year);
+    $r = $stmt_del_takes->execute();
+    if(!$r){
+        $conn->rollback();
+        echo "删除失败，请检查";
+        return false;
+    }
+    $stmt_del_takes->free_result();
+    //删除teaches
+    $stmt_del_teaches = $conn->prepare("delete from teaches where course_id=? and sec_id=? and semester=? and `year`=?");
+    $stmt_del_teaches->bind_param("sisi",$course_id,$sec_id,$semester,$year);
+    $r = $stmt_del_teaches->execute();
+    if(!$r){
+        $conn->rollback();
+        echo "删除失败，请检查";
+        return false;
+    }
+    $stmt_del_teaches->free_result();
+    //删除考试相关
+    $stmt_find_exam = $conn->prepare("select exam_id,specific_exam_id from `section` natural join exam_time_place where course_id=? and sec_id=? and semester=? and `year`=?");
+    $stmt_find_exam->bind_param("sisi",$course_id,$sec_id,$semester,$year);
+    $stmt_find_exam->execute();
+    $sec_result = $stmt_find_exam->get_result();
+    $row = $sec_result->fetch_assoc();
+    $exam_id = $row["exam_id"];
+    $specific_exam_id = $row["specific_exam_id"];
+    $stmt_find_exam->free_result();
+
+    //删除take_exam
+    $stmt_del_te= $conn->prepare("delete from take_exam where specific_exam_id=?");
+    $stmt_del_te->bind_param("i",$specific_exam_id);
+    $r = $stmt_del_te->execute();
+    if(!$r){
+        $conn->rollback();
+        echo "删除失败，请检查";
+        return false;
+    }
+    $stmt_del_te->free_result();
+    //删除exam_time_place
+    $stmt_del_etp= $conn->prepare("delete from exam_time_place where exam_id=?");
+    $stmt_del_etp->bind_param("i",$exam_id);
+    $r = $stmt_del_etp->execute();
+    if(!$r){
+        $conn->rollback();
+        echo "删除失败，请检查";
+        return false;
+    }
+    $stmt_del_etp->free_result();
+    //删除exam_time
+    $stmt_del_et= $conn->prepare("delete from exam_time where exam_id=?");
+    $stmt_del_et->bind_param("i",$exam_id);
+    $r = $stmt_del_et->execute();
+    if(!$r){
+        $conn->rollback();
+        echo "删除失败，请检查";
+        return false;
+    }
+    $stmt_del_et->free_result();
+    //删除paper/test
+    $stmt_del_paper = $conn->prepare("delete from paper where exam_id=?");
+    $stmt_del_paper->bind_param("i",$exam_id);
+    $r = $stmt_del_paper->execute();
+    if(!$r){
+        $conn->rollback();
+        echo "删除失败，请检查";
+        return false;
+    }
+    $stmt_del_paper->free_result();
+
+    $stmt_del_test = $conn->prepare("delete from test where exam_id=?");
+    $stmt_del_test->bind_param("i",$exam_id);
+    $r = $stmt_del_test->execute();
+    if(!$r){
+        $conn->rollback();
+        echo "删除失败，请检查";
+        return false;
+    }
+    $stmt_del_test->free_result();
+    //删除exam
+    $stmt_del_exam= $conn->prepare("delete from exam where exam_id=?");
+    $stmt_del_exam->bind_param("i",$exam_id);
+    $r = $stmt_del_exam->execute();
+    if(!$r){
+        $conn->rollback();
+        echo "删除失败，请检查";
+        return false;
+    }
+    $stmt_del_exam->free_result();
+
+    //删除section
+    $stmt_del_section= $conn->prepare("delete from section where course_id=? and sec_id=? and semester=? and `year`=?");
+    $stmt_del_section->bind_param("sisi",$course_id,$sec_id,$semester,$year);
+    $r = $stmt_del_section->execute();
+    if(!$r){
+        $conn->rollback();
+        echo "删除失败，请检查";
+        return false;
+    }
+    $stmt_del_section->free_result();
+
+    $conn->commit();
+    $conn->autocommit(true);
+    return true;
+
+}
+function delete_course($conn,$course_id){
+    $stmt = $conn->prepare("delete from course where course_id = ?");
+    $stmt->bind_param("s",$course_id);
+    $r = $stmt->execute();
+    if(!$r){
+        echo "该课程有开课信息，现在无法删除";
+        return false;
+    }
+    $stmt->free_result();
+    return true;
+}

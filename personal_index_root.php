@@ -64,9 +64,25 @@ $conn = connectToDB("127.0.0.1","collegeadmin","collegeadmin");
                 <button type="submit" class="btn btn-default">导入</button>
             </form>
             <br/>
-
             <hr style="height:1px;border:none;border-top:1px solid 	#D3D3D3;" />
-
+            <label>手动导入</label>
+            <form class="form form-inline" role="form" method="post">
+                <input class="form-group form-control" placeholder="student id" name="import_stu_id">
+                <input class="form-group form-control" placeholder="student name" name="import_stu_name">
+                <input class="form-group form-control" placeholder="credits" name="import_credit">
+                <input class="form-group form-control" placeholder="gpa" name="import_gpa">
+                <input class="form-group form-control" placeholder="enroll time" name="import_etime">
+                <input class="form-group form-control" placeholder="graduate time" name="import_gtime">
+                <button class="btn btn-primary" type="submit" value="import_manual" name="import_m_btn">添加</button>
+            </form>
+            <?php
+            if(isset($_POST["import_m_btn"])){
+                $student_new = new Student($_POST["import_stu_id"],$_POST["import_stu_name"],$_POST["import_credit"],$_POST["import_gpa"],$_POST["import_etime"],$_POST["import_gtime"]);
+                import_one_student($conn,$student_new);
+            }
+            ?>
+            <br/>
+            <hr style="height:1px;border:none;border-top:1px solid 	#D3D3D3;" />
             <form class="form-inline" role="form" method="post" id="search_form">
                 <div class="input-group input-group-lg">
                     <input id="stu_search" type="text" class="form-control" placeholder="输入学号" name="stu_search">
@@ -269,6 +285,21 @@ $conn = connectToDB("127.0.0.1","collegeadmin","collegeadmin");
             </form>
             <br/>
             <hr style="height:1px;border:none;border-top:1px solid 	#D3D3D3;" />
+            <form class="form form-inline" method="post" role="form">
+                <input name="add_ins_id" class="form-group form-control" placeholder="instructor id">
+                <input name="add_ins_name" class="form-group form-control" placeholder="instructor name">
+                <input name="add_ins_htime" class="form-group form-control" placeholder="hire time">
+                <input name="add_ins_qtimr" class="form-group form-control" placeholder="quit time">
+                <button class="btn btn-primary" type="submit" name="add_ins_btn" value="添加">添加</button>
+            </form>
+            <?php
+            if(isset($_POST["add_ins_btn"])){
+                $instructor = new Instructor($_POST["add_ins_id"],$_POST["add_ins_name"],$_POST["add_ins_htime"],$_POST["add_ins_qtimr"]);
+                import_one_instructor($conn,$instructor);
+            }
+            ?>
+            <br/>
+            <hr style="height:1px;border:none;border-top:1px solid 	#D3D3D3;" />
             <form class="form-inline" role="form" method="post" id="search_form">
                 <div class="input-group input-group-lg">
                     <input id="ins_search" type="text" class="form-control" placeholder="输入工号" name="ins_search">
@@ -316,10 +347,10 @@ $conn = connectToDB("127.0.0.1","collegeadmin","collegeadmin");
                                       </form>";
                         }else{
                             echo "<form role='form' method='post'><tr>
-                                        <td>{$row["instructor_id"]}<input name='stu_id' value='{$row["instructor_id"]}' type='hidden'></td>
-                                        <td>{$row["instructor_name"]}<input name='new_name' value='{$row["instructor_name"]}' type='hidden'></td>
-                                        <td>{$row["hire_time"]}<input name='new_credit' value='{$row["hire_time"]}' type='hidden'></td>
-                                        <td>{$row["quit_time"]}<input name='new_gpa' value='{$row["quit_time"]}' type='hidden'></td>
+                                        <td>{$row["instructor_id"]}<input name='ins_id' value='{$row["instructor_id"]}' type='hidden'></td>
+                                        <td>{$row["instructor_name"]}<input name='new_ins_name' value='{$row["instructor_name"]}' type='hidden'></td>
+                                        <td>{$row["hire_time"]}<input name='new_ins_htime' value='{$row["hire_time"]}' type='hidden'></td>
+                                        <td>{$row["quit_time"]}<input name='new_ins_qtime' value='{$row["quit_time"]}' type='hidden'></td>
                                         <button id='delete_ins_info_btn' name='delete_ins_info_btn' class='form-control btn btn-primary' value='delete' type='submit'>删除</button>
                                       </tr></form>";
                         }
@@ -452,13 +483,52 @@ $conn = connectToDB("127.0.0.1","collegeadmin","collegeadmin");
                             <td>$sec->selected_num</td>
                             <td>$sec->course_name</td>
                             <td>$sec->class_to_time_str</td>
-                            <td><form action='personal_index_student.php'>
-                                <input type='hidden' name='course_id' value='$sec->course_id'>
-                                <input type='hidden' name='sec_id' value='$sec->sec_id'>
-                                <input type='hidden' name='semester' value='$sec->semester'>
-                                <input type='hidden' name='year' value='$sec->year'>
-                                <input type='hidden' name='choose_or_drop' value='drop'>
-                                <input type='submit' value='删除' class='btn btn-primary' id='delete_lesson'>
+                            <td><form method='post' role='form'>
+                                <input type='hidden' name='del_course_id' value='$sec->course_id'>
+                                <input type='hidden' name='del_sec_id' value='$sec->sec_id'>
+                                <input type='hidden' name='del_semester' value='$sec->semester'>
+                                <input type='hidden' name='del_year' value='$sec->year'>
+                                <input type='submit' value='删除' class='btn btn-primary' name='delete_lesson'>
+                            </form></td>
+                          </tr>";
+                    }
+
+                }
+//                if(!empty($_POST["delete_lesson"])){
+//                    delete_section($conn,$_POST["del_course_id"],$_POST["del_sec_id"],$_POST["del_semester"],$_POST["del_year"]);
+//                }
+
+                ?>
+
+                </tbody>
+            </table>
+            <caption class="table panel-heading"><h4>课程信息</h4></caption>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>课程id</th>
+                    <th>课程名称</th>
+                    <th>课程学分</th>
+                    <th>课程学时</th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php
+                if(isset($_GET["course_search"])){
+                    $stmt_get_course = $conn->prepare("select * from course where course_id=?");
+                    $stmt_get_course->bind_param("s",$_GET["course_search"]);
+                    $stmt_get_course->execute();
+                    $result = $stmt_get_course->get_result();
+                    $row = $result->fetch_assoc();
+                    if($result->num_rows){
+                        echo "<tr>
+                            <td>{$row["course_id"]}</td>
+                            <td>{$row["course_name"]}</td>
+                            <td>{$row["credit"]}</td>
+                            <td>{$row["class_hours"]}</td>
+                            <td><form method='post' role='form'>
+                                <input type='hidden' value='{$row["course_id"]}'>
+                                <input type='submit' value='删除' class='btn btn-primary' name='delete_course'>
                             </form></td>
                           </tr>";
                     }
@@ -668,6 +738,48 @@ $(function () {
             }
         })
 
+    })
+    $("[name='delete_lesson']").click(function () {
+        var year = $(this).prev();
+        var semester = year.prev();
+        var sec_id = semester.prev();
+        var course_id = sec_id.prev();
+        $.ajax({
+            url:"/SubjectSystem/tool_delete_sec.php?course_id="+course_id.val()+"&sec_id="+sec_id.val()+"&semester="+semester.val()+"&year="+year.val(),
+            success:
+                function (data){
+                    switch (data) {
+                        case "0":
+                            window.location.reload();
+                            break;
+                        case "1":
+                            alert("数据库连接失败");
+                            break;
+                        default:
+                            alert(data);
+                    }
+                }
+        })
+
+    })
+    $("[name='delete_course']").click(function () {
+        var course_id = $(this).prev().val();
+        $.ajax({
+            url:"/SubjectSystem/tool_delete_course.php?course_id="+course_id,
+            success:
+                function (data){
+                    switch (data) {
+                        case "0":
+                            window.location.reload();
+                            break;
+                        case "1":
+                            alert("数据库连接失败");
+                            break;
+                        default:
+                            alert(data);
+                    }
+                }
+        })
     })
 
 })
