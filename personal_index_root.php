@@ -25,8 +25,10 @@ $conn = connectToDB("127.0.0.1","collegeadmin","collegeadmin");
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+<!--    <link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.3.1/css/bootstrap.min.css">-->
     <link href="css/bootstrap.min.css" rel="stylesheet">
     <link href="css/main.css" rel="stylesheet">
+
     <title>教务系统·管理员主页</title>
 <!--    <script src="js/jquery.js"></script>-->
     <script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
@@ -285,6 +287,7 @@ $conn = connectToDB("127.0.0.1","collegeadmin","collegeadmin");
             </form>
             <br/>
             <hr style="height:1px;border:none;border-top:1px solid 	#D3D3D3;" />
+            <label>手动导入</label>
             <form class="form form-inline" method="post" role="form">
                 <input name="add_ins_id" class="form-group form-control" placeholder="instructor id">
                 <input name="add_ins_name" class="form-group form-control" placeholder="instructor name">
@@ -438,42 +441,108 @@ $conn = connectToDB("127.0.0.1","collegeadmin","collegeadmin");
 
         <div class="tab-pane" id="edit_sections">
             <br/>
-            <form class="form-inline" role="form" method="post" enctype="multipart/form-data" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel">
-                <div class="form-group">
-                    <input type="file" id="file_sec" name="file_sec">
+            <div class="container">
+                <div class="row">
+                    <div class="col-sm-6">
+                        <label>导入课程信息</label>
+                        <form class="form-inline" role="form" method="post" enctype="multipart/form-data" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel">
+                            <div class="form-group">
+                                <input type="file" id="file_cour" name="file_cour">
+                            </div>
+                            <button type="submit" class="btn btn-default btn-sm">导入</button>
+                        </form>
+                    </div>
+                    <div class="col-sm-6">
+                        <label>导入开课信息</label>
+                        <form class="form-inline" role="form" method="post" enctype="multipart/form-data" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel">
+                            <div class="form-group">
+                                <input type="file" id="file_sec" name="file_sec">
+                            </div>
+                            <button type="submit" class="btn btn-default btn-sm">导入</button>
+                        </form>
+                    </div>
                 </div>
-                <button type="submit" class="btn btn-default">导入</button>
-            </form>
+            </div>
+
             <br/>
             <hr style="height:1px;border:none;border-top:1px solid 	#D3D3D3;" />
+            <div class="container">
+                <div class="row">
+                    <div class="col-sm-3">
+                        <div class="list-group">
+                            <div class="list-group-item active"><h5>导入课程</h5></div>
+                            <form class="list-group-item" method="post" role="form">
+                                <input name="addc_cid" class="form-group form-control" placeholder="课程代码">
+                                <input name="addc_cname" class="form-group form-control" placeholder="课程名称">
+                                <input name="addc_credit" class="form-group form-control" placeholder="学分">
+                                <input name="addc_ch" class="form-group form-control" placeholder="学时">
+                                <button class="btn btn-primary" type="submit" name="add_cour_btn" value="添加">添加/修改</button>
+                            </form>
+                        </div>
+                        <?php
+                        if(isset($_POST["add_cour_btn"])){
+                            if(import_one_course($conn,$_POST["addc_cid"],$_POST["addc_cname"],$_POST["addc_credit"],$_POST["addc_ch"]))
+                                echo "<script>window.location.href='personal_index_root.php?course_search=".$_POST["addc_cid"]."#edit_sections'</script>";
+                            else
+                                echo "<script>window.location.href='personal_index_root.php#edit_sections'</script>";
+                        }
+                        ?>
+                        <div class="list-group">
+                            <div class="list-group-item active"><h5>导入开课</h5></div>
+                            <form class="form list-group-item" method="post" role="form">
+                                <input name="adds_cid" class="form-group form-control" placeholder="课程代码">
+                                <input name="adds_sid" class="form-group form-control" placeholder="课程段代码">
+                                <input name="adds_semester" class="form-group form-control" placeholder="学期">
+                                <input name="adds_year" class="form-group form-control" placeholder="学年">
+                                <input name="adds_startweek" class="form-group form-control" placeholder="起始周">
+                                <input name="adds_endweek" class="form-group form-control" placeholder="结束周">
+                                <input name="adds_number" class="form-group form-control" placeholder="可选人数">
+                                <input name="adds_instructor" class="form-group form-control" placeholder="任课教师">
+                                <input name="adds_examweek" class="form-group form-control" placeholder="考试周">
+                                <input name="adds_examday" class="form-group form-control" placeholder="考试天(1-7)">
+                                <input name="adds_examtype" class="form-group form-control" placeholder="考试/其他">
+                                <input name="adds_examdes" class="form-group form-control" placeholder="开/闭卷/其他">
+                                <input name="adds_examtimestart" class="form-group form-control" placeholder="考试开始时间">
+                                <input name="adds_examtimeend" class="form-group form-control" placeholder="考试结束时间">
+                                <textarea name="adds_classtime" rows="5" class="form-group form-control" placeholder="上课时间地点"></textarea>
+                                <button class="btn btn-primary" type="submit" name="add_sec_btn" value="添加">添加/修改</button>
+                            </form>
+                        </div>
+                        <?php
+                        if(isset($_POST["add_sec_btn"])){
 
-            <form class="form-inline" role="form" method="post">
-                <div class="input-group input-group-lg">
-                    <input id="course_search" type="text" class="form-control" placeholder="输入课程号" name="course_search">
-                    <span class="btn btn-default input-group-addon" id="course_search_btn">搜索</span>
-                </div>
-            </form>
-            <caption class="table panel-heading"><h4>开课信息</h4></caption>
-            <table class="table">
-                <thead>
-                <tr>
-                    <th>课程id</th>
-                    <th>课程段id</th>
-                    <th>学期</th>
-                    <th>开始周</th>
-                    <th>结束周</th>
-                    <th>人数限制</th>
-                    <th>当前人数</th>
-                    <th>课程名称</th>
-                    <th>上课时间</th>
-                </tr>
-                </thead>
-                <tbody>
-                <?php
-                if(isset($_GET["course_search"])){
-                    $sec_set = admin_get_section_course($conn,$_GET["course_search"]);
-                    foreach ($sec_set as $sec){
-                        echo "<tr>
+                        }
+                        ?>
+                    </div>
+                    <div class="col-sm-9">
+                        <form class="form-inline" role="form" method="post">
+                            <div class="input-group input-group-lg">
+                                <input id="course_search" type="text" class="form-control" placeholder="输入课程号" name="course_search">
+                                <span class="btn btn-default input-group-addon" id="course_search_btn">搜索</span>
+                            </div>
+                        </form>
+                        <br/>
+                        <caption class="table panel-heading"><h4>开课信息</h4></caption>
+                        <table class="table">
+                            <thead>
+                            <tr>
+                                <th>课程id</th>
+                                <th>课程段id</th>
+                                <th>学期</th>
+                                <th>开始周</th>
+                                <th>结束周</th>
+                                <th>人数限制</th>
+                                <th>当前人数</th>
+                                <th>课程名称</th>
+                                <th>上课时间</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <?php
+                            if(isset($_GET["course_search"])){
+                                $sec_set = admin_get_section_course($conn,$_GET["course_search"]);
+                                foreach ($sec_set as $sec){
+                                    echo "<tr>
                             <td>$sec->course_id</td>
                             <td>$sec->sec_id</td>
                             <td>$sec->semester</td>
@@ -491,37 +560,33 @@ $conn = connectToDB("127.0.0.1","collegeadmin","collegeadmin");
                                 <input type='submit' value='删除' class='btn btn-primary' name='delete_lesson'>
                             </form></td>
                           </tr>";
-                    }
+                                }
 
-                }
-//                if(!empty($_POST["delete_lesson"])){
-//                    delete_section($conn,$_POST["del_course_id"],$_POST["del_sec_id"],$_POST["del_semester"],$_POST["del_year"]);
-//                }
+                            }
+                            ?>
 
-                ?>
-
-                </tbody>
-            </table>
-            <caption class="table panel-heading"><h4>课程信息</h4></caption>
-            <table class="table">
-                <thead>
-                <tr>
-                    <th>课程id</th>
-                    <th>课程名称</th>
-                    <th>课程学分</th>
-                    <th>课程学时</th>
-                </tr>
-                </thead>
-                <tbody>
-                <?php
-                if(isset($_GET["course_search"])){
-                    $stmt_get_course = $conn->prepare("select * from course where course_id=?");
-                    $stmt_get_course->bind_param("s",$_GET["course_search"]);
-                    $stmt_get_course->execute();
-                    $result = $stmt_get_course->get_result();
-                    $row = $result->fetch_assoc();
-                    if($result->num_rows){
-                        echo "<tr>
+                            </tbody>
+                        </table>
+                        <caption class="table panel-heading"><h4>课程信息</h4></caption>
+                        <table class="table">
+                            <thead>
+                            <tr>
+                                <th>课程id</th>
+                                <th>课程名称</th>
+                                <th>课程学分</th>
+                                <th>课程学时</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <?php
+                            if(isset($_GET["course_search"])){
+                                $stmt_get_course = $conn->prepare("select * from course where course_id=?");
+                                $stmt_get_course->bind_param("s",$_GET["course_search"]);
+                                $stmt_get_course->execute();
+                                $result = $stmt_get_course->get_result();
+                                $row = $result->fetch_assoc();
+                                if($result->num_rows){
+                                    echo "<tr>
                             <td>{$row["course_id"]}</td>
                             <td>{$row["course_name"]}</td>
                             <td>{$row["credit"]}</td>
@@ -531,18 +596,29 @@ $conn = connectToDB("127.0.0.1","collegeadmin","collegeadmin");
                                 <input type='submit' value='删除' class='btn btn-primary' name='delete_course'>
                             </form></td>
                           </tr>";
-                    }
+                                }
 
-                }
-                ?>
+                            }
+                            ?>
 
-                </tbody>
-            </table>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+
+
         </div>
         <?php
         if(isset($_FILES['file_sec'])){
             if (is_uploaded_file($_FILES['file_sec']['tmp_name'])) {
                 sectionLoader($conn,$_FILES['file_sec']['tmp_name']);
+            }
+        }
+        if(isset($_FILES['file_cour'])){
+            if (is_uploaded_file($_FILES['file_cour']['tmp_name'])) {
+                courseLoader($conn,$_FILES['file_cour']['tmp_name']);
             }
         }
         ?>

@@ -1297,3 +1297,37 @@ function delete_course($conn,$course_id){
     $stmt->free_result();
     return true;
 }
+function import_one_course($conn,$course_id,$course_name,$course_credit,$class_hours){
+    if((empty($course_id)||strlen($course_id)==0) ||
+        (empty($course_name)||strlen($course_name)==0) ||
+        (empty($course_credit)||strlen($course_credit)==0) ||
+        (empty($class_hours)||strlen($class_hours)==0) ||
+    !is_numeric($course_credit) || !is_numeric($class_hours)){
+        echo "<script>alert('提交数据不合法')</script>";
+        return false;
+    }
+    $stmt_check = $conn->prepare("select * from course where course_id = ?");
+    $stmt_check->bind_param("s",$course_id);
+    $stmt_check->execute();
+    $check_result = $stmt_check->get_result();
+    if($check_result->num_rows){//更新课程
+        $stmt_update = $conn->prepare("update course set course_name=?,credit=?,class_hours=? where course_id=?");
+        $stmt_update->bind_param("siis",$course_name,$course_credit,$class_hours,$course_id);
+        $r = $stmt_update->execute();
+    }else{
+        $stmt_insert = $conn->prepare("insert into course (course_id,course_name,credit,class_hours) values (?,?,?,?)");
+        $stmt_insert->bind_param("ssii",$course_id,$course_name,$course_credit,$class_hours);
+        $r = $stmt_insert->execute();
+    }
+    if(!$r){
+        echo "<script>alert('添加/更新失败，请检查后重试')</script>";
+        return false;
+    }else{
+        echo "<script>alert('添加/更新成功')</script>";
+        return true;
+    }
+}
+function import_one_section($conn,$course_id,$sec_id,$semester,$year,$sweek,$eweek,$number,$instructor_str,$exam_week,$exam_day,$exam_type,$exam_des,$exam_stime,$exam_etime,$classtime_str){
+    
+
+}
