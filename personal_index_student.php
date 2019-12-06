@@ -8,6 +8,7 @@
 
 require_once 'ConnectSQL.php';
 require_once 'components.php';
+require_once 'check_privilege.php';
 
 session_start();
 if(!isset($_SESSION['st_id'])) {
@@ -37,6 +38,8 @@ if(isset($_GET['choose_or_drop'])){
     else
         echo "别刷新，先把get后面的参数删了";
 }
+
+//var_dump(check_if_have_privilege($conn,"application","UPDATE"));
 
 if(isset($_POST['app_course_id'])){
     //make_application($conn, $student_id, $sec_id, $course_id, $semester, $year, $appli_content)
@@ -156,7 +159,10 @@ $paper_list = get_paper_list($conn, $st_id);
                                 <input type='hidden' name='year' value='$sec->year'>
                                 <input type='hidden' name='student_id' value='$st_id'>
                                 <input type='hidden' name='choose_or_drop' value='drop'>
-                                <input type='submit' value='退课' class='btn btn-primary' id='drop_lesson'>
+                                <input type='submit' value='退课' class='btn btn-primary ";
+                    if(!check_if_have_privilege($conn,"drops","INSERT"))
+                        echo "disabled";
+                    echo "' id='drop_lesson'>
                             </form></td>
                           </tr>";
                 }
@@ -202,12 +208,18 @@ $paper_list = get_paper_list($conn, $st_id);
                                 <input type='hidden' name='year' value='$sec->year'>
                                 <input type='hidden' name='student_id' value='$st_id'>
                                 <input type='hidden' name='choose_or_drop' value='choose'>
-                                <input type='submit' value='选课' class='btn btn-primary' id='choose_lesson'>
+                                <input type='submit' value='选课' class='btn btn-primary ";
+                        if(!check_if_have_privilege($conn,"takes","INSERT"))
+                            echo "disabled";
+                        echo "' id='choose_lesson'>
                             </form>";
                     }
                     else{
                         echo "<a href='make_application_student.php?course_id=$sec->course_id&sec_id=$sec->sec_id&semester=$sec->semester&year=$sec->year' 
-                                                class='btn btn-primary'>申请</a>";
+                                                class='btn btn-primary ";
+                        if(!check_if_have_privilege($conn,"application","INSERT"))
+                            echo "disabled";
+                        echo "'>申请</a>";
                     }
 
                     echo "

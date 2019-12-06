@@ -114,7 +114,10 @@ $app_list = get_app_for_sec_set($conn, $sec_set);
                             <td><a class='btn btn-default' 
                             href='section_member_list.php?sec_id=$sec->sec_id&course_id=$sec->course_id&semester=$sec->semester&year=$sec->year'>
                             查看花名册</a>
-                            <a class='btn btn-default' 
+                            <a class='btn btn-default ";
+                    if(!check_if_have_privilege($conn,"student","UPDATE"))
+                        echo "disabled";
+                    echo "' 
                             href='log_marks.php?sec_id=$sec->sec_id&course_id=$sec->course_id&semester=$sec->semester&year=$sec->year'>
                             登分</a></td>
                             

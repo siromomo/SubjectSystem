@@ -13,7 +13,7 @@ if($role === 'teacher'){
     jump_to_page("/SubjectSystem/personal_index_student.php");
 }
 
-$conn = connectToDB("127.0.0.1","collegeadmin","collegeadmin");
+$conn = connectToDB();//"127.0.0.1","collegeadmin","collegeadmin"
 
 //insertIntoChartBasic("classroom", ["classroom_id", "capacity"], "si", $conn);
 //insertIntoChartBasic("course", ["course_id", "course_name", "credit", "class_hours"], "ssii", $conn);
@@ -46,6 +46,9 @@ $conn = connectToDB("127.0.0.1","collegeadmin","collegeadmin");
         </li>
         <li>
             <a href="#edit_sections" data-toggle="tab">编辑开课信息</a>
+        </li>
+        <li>
+            <a href="#status" data-toggle="tab">系统状态控制</a>
         </li>
     </ul>
     <br/>
@@ -718,6 +721,34 @@ $conn = connectToDB("127.0.0.1","collegeadmin","collegeadmin");
             }
         }
         ?>
+
+        <div class="tab-pane" id="status">
+            <h4 id="now_status">系统状态:<?php echo get_system_status($conn);?></h4>
+            <br/>
+            <div class="container">
+                <div class="row">
+                    <button class="btn btn-danger" id="ini_btn">点此进入初始化</button>
+                </div>
+                <div class="row">
+                    <label>此状态下学生/教师将只有查看权限，管理员需在此状态下初始化学生/老师/课程信息以免用户选课对初始数据修改造成干扰(状态:initializing)</label>
+                </div>
+                <br/>
+                <div class="row">
+                    <button class="btn btn-danger" id="sta_btn">点此开启选/退课系统</button>
+                </div>
+                <div class="row">
+                    <label>点击后学生/教师将可以开始自由选/退课，教师无法在此阶段上传成绩(状态:starting)</label>
+                </div>
+                <br/>
+                <div class="row">
+                    <button class="btn btn-danger" id="gra_btn">点此关闭选/退课系统</button>
+                </div>
+                <div class="row">
+                    <label>点击后选/退课系统将关闭，教师可以随时进行登分(状态:grading)</label>
+                </div>
+
+            </div>
+        </div>
     </div>
 </div>
 </body>
@@ -737,6 +768,61 @@ $(window).on('popstate',function () {
 });
 
 $(function () {
+    $("#ini_btn").click(function () {
+        $.ajax({
+            url:"/SubjectSystem/tool_change_status.php?toStatus=ini",
+            success:
+                function (data) {
+                    switch (data) {
+                        case "0":
+                            // $("#now_status").text("系统状态:initializing");
+                            window.location.reload();
+                            break;
+                        case "1":
+                            alert("数据库连接失败");
+                            break;
+                        default:
+                            alert(data);
+                    }
+                }
+        })
+    })
+    $("#sta_btn").click(function () {
+        $.ajax({
+            url:"/SubjectSystem/tool_change_status.php?toStatus=sta",
+            success:
+                function (data) {
+                    switch (data) {
+                        case "0":
+                            window.location.reload();
+                            break;
+                        case "1":
+                            alert("数据库连接失败");
+                            break;
+                        default:
+                            alert(data);
+                    }
+                }
+        })
+    })
+    $("#gra_btn").click(function () {
+        $.ajax({
+            url:"/SubjectSystem/tool_change_status.php?toStatus=gra",
+            success:
+                function (data) {
+                    switch (data) {
+                        case "0":
+                            window.location.reload();
+                            break;
+                        case "1":
+                            alert("数据库连接失败");
+                            break;
+                        default:
+                            alert(data);
+                    }
+                }
+        })
+    })
     $("#exit_btn").click(function () {
         $.ajax({
             url:"/SubjectSystem/logout.php",

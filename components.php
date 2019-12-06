@@ -1,5 +1,5 @@
 <?php
-
+require_once 'check_privilege.php';
 /*
  * component：工具函数类
  * 相关函数：
@@ -1139,7 +1139,7 @@ function import_one_instructor($conn,$instructor){
 }
 function delete_section($conn,$course_id,$sec_id,$semester,$year){//TODO 时间限制
     $conn->autocommit(false);
-    $stmt_check = $conn->prepare("select grade from takes where course_id=? and sec_id=? and semester=? and `year`=?");
+    $stmt_check = $conn->prepare("select grade from takes where course_id=? and sec_id=? and semester=? and `year`=? and grade != null");
     $stmt_check->bind_param("sisi",$course_id,$sec_id,$semester,$year);
     $stmt_check->execute();
     $check_result = $stmt_check->get_result();
@@ -1590,6 +1590,206 @@ function load_single_section($conn,$values,$class_time,$insIdArray,$exam_week,$e
         }
     }
 
+    $conn->commit();
+    $conn->autocommit(true);
+    return true;
+}
+
+
+function get_system_status($conn){
+    //管理员初始化阶段，教师/学生只有select权限 （管理员可以删除课程）
+    //选课退课阶段，学生拥有最多的权限 (管理员可以删除课程）老师不能上传成绩但是能通过申请
+    //结束选课退课阶段，学生只有select权限，教师可以登分，（此时建议不能删除课程）
+    if(!check_his_privilege($conn,"student","application","INSERT") &&
+        !check_his_privilege($conn,"student","drops","INSERT") &&
+        !check_his_privilege($conn,"student","section","UPDATE") &&
+        !check_his_privilege($conn,"student","takes","INSERT") &&
+        !check_his_privilege($conn,"student","takes","DELETE") &&
+        check_his_privilege($conn,"student","*","SELECT")
+    && check_his_privilege($conn,"teacher","*","SELECT") &&
+        !check_his_privilege($conn,"teacher","application","UPDATE") &&
+        !check_his_privilege($conn,"teacher","section","UPDATE") &&
+        !check_his_privilege($conn,"teacher","student","UPDATE") &&
+        !check_his_privilege($conn,"teacher","takes","UPDATE") ){
+//        echo "<script>alert('1')</script>";
+        return "initializing";
+    }
+    if(check_his_privilege($conn,"student","application","INSERT") &&
+        check_his_privilege($conn,"student","drops","INSERT") &&
+        check_his_privilege($conn,"student","section","UPDATE") &&
+        check_his_privilege($conn,"student","takes","INSERT") &&
+        check_his_privilege($conn,"student","takes","DELETE") &&
+        check_his_privilege($conn,"student","*","SELECT")
+        && check_his_privilege($conn,"teacher","*","SELECT") &&
+        check_his_privilege($conn,"teacher","application","UPDATE") &&
+        check_his_privilege($conn,"teacher","section","UPDATE") &&
+        !check_his_privilege($conn,"teacher","student","UPDATE") &&
+        check_his_privilege($conn,"teacher","takes","UPDATE") ){
+//        echo "<script>alert('2')</script>";
+        return "starting";
+    }
+    if(!check_his_privilege($conn,"student","application","INSERT") &&
+        !check_his_privilege($conn,"student","drops","INSERT") &&
+        !check_his_privilege($conn,"student","section","UPDATE") &&
+        !check_his_privilege($conn,"student","takes","INSERT") &&
+        !check_his_privilege($conn,"student","takes","DELETE") &&
+        check_his_privilege($conn,"student","*","SELECT")
+        && check_his_privilege($conn,"teacher","*","SELECT") &&
+        check_his_privilege($conn,"teacher","application","UPDATE") &&
+        check_his_privilege($conn,"teacher","section","UPDATE") &&
+        check_his_privilege($conn,"teacher","student","UPDATE") &&
+        check_his_privilege($conn,"teacher","takes","UPDATE") ){
+//        echo "<script>alert('3')</script>";
+        return "grading";
+    }
+    return "error";
+}
+
+function change_status2initializing($conn){
+    $conn->autocommit(false);
+    $stmt_revoke_student = "revoke all privileges on *.* from student";
+    $query = mysqli_query($conn,$stmt_revoke_student);
+    if(!$query){
+        alert_error($conn);
+        $conn->rollback();
+        echo "切换失败";
+        return false;
+    }
+    $stmt_revoke_teacher = "revoke all privileges on *.* from teacher";
+    $query = mysqli_query($conn,$stmt_revoke_teacher);
+    if(!$query){
+        $conn->rollback();
+        echo "切换失败";
+        return false;
+    }
+    $stmt_grant_stu = "grant select on `course_select_system`.* to student";
+    $query = mysqli_query($conn,$stmt_grant_stu);
+    if(!$query){
+        $conn->rollback();
+        echo "切换失败";
+        return false;
+    }
+    $stmt_grant_tea = "grant select on `course_select_system`.* to teacher";
+    $query = mysqli_query($conn,$stmt_grant_tea);
+    if(!$query){
+        $conn->rollback();
+        echo "切换失败";
+        return false;
+    }
+    $stmt_flush = "flush privileges";
+    $query = mysqli_query($conn,$stmt_flush);
+    if(!$query){
+        $conn->rollback();
+        echo "切换失败";
+        return false;
+    }
+    $conn->commit();
+    $conn->autocommit(true);
+    return true;
+}
+function change_status2starting($conn){
+    $conn->autocommit(false);
+    $stmt_revoke_student = "revoke all privileges on *.* from student";
+    $query = mysqli_query($conn,$stmt_revoke_student);
+    if(!$query){
+        $conn->rollback();
+        echo "切换失败";
+        return false;
+    }
+    $stmt_revoke_teacher = "revoke all privileges on *.* from teacher";
+    $query = mysqli_query($conn,$stmt_revoke_teacher);
+    if(!$query){
+        $conn->rollback();
+        echo "切换失败";
+        return false;
+    }
+    $stmt_grant_stu1 = "grant select on `course_select_system`.* to student";
+    $stmt_grant_stu2 = "grant insert on `course_select_system`.`application` to student";
+    $stmt_grant_stu3 = "grant insert on `course_select_system`.`drops` to student";
+    $stmt_grant_stu4 = "grant insert on `course_select_system`.`takes` to student";
+    $stmt_grant_stu5 = "grant delete on `course_select_system`.`takes` to student";
+    $stmt_grant_stu6 = "grant update on `course_select_system`.`section` to student";
+    $r1 = mysqli_query($conn,$stmt_grant_stu1);
+    $r2 = mysqli_query($conn,$stmt_grant_stu2);
+    $r3 = mysqli_query($conn,$stmt_grant_stu3);
+    $r4 = mysqli_query($conn,$stmt_grant_stu4);
+    $r5 = mysqli_query($conn,$stmt_grant_stu5);
+    $r6 = mysqli_query($conn,$stmt_grant_stu6);
+    if(!$r1 || !$r2 || !$r3 || !$r4 || !$r5 || !$r6){
+        $conn->rollback();
+        echo "切换失败";
+        return false;
+    }
+    $stmt_grant_tea1 = "grant select on `course_select_system`.* to teacher";
+    $stmt_grant_tea2 = "grant update on `course_select_system`.`takes` to teacher";
+    $stmt_grant_tea3 = "grant update on `course_select_system`.`application` to teacher";
+    $stmt_grant_tea4 = "grant update on `course_select_system`.`section` to teacher";
+    $r1 = mysqli_query($conn,$stmt_grant_tea1);
+    $r2 = mysqli_query($conn,$stmt_grant_tea2);
+    $r3 = mysqli_query($conn,$stmt_grant_tea3);
+    $r4 = mysqli_query($conn,$stmt_grant_tea4);
+    if(!$r1 || !$r2 || !$r3 || !$r4){
+        $conn->rollback();
+        echo "切换失败";
+        return false;
+    }
+    $stmt_flush = "flush privileges";
+    $query = mysqli_query($conn,$stmt_flush);
+    if(!$query){
+        $conn->rollback();
+        echo "切换失败";
+        return false;
+    }
+    $conn->commit();
+    $conn->autocommit(true);
+    return true;
+
+}
+function change_status2grading($conn){
+    $conn->autocommit(false);
+    $stmt_revoke_student = "revoke all privileges on *.* from student";
+    $query = mysqli_query($conn,$stmt_revoke_student);
+    if(!$query){
+        $conn->rollback();
+        echo "切换失败";
+        return false;
+    }
+    $stmt_revoke_teacher = "revoke all privileges on *.* from teacher";
+    $query = mysqli_query($conn,$stmt_revoke_teacher);
+    if(!$query){
+        $conn->rollback();
+        echo "切换失败";
+        return false;
+    }
+    $stmt_grant_stu1 = "grant select on `course_select_system`.* to student";
+    $r1 = mysqli_query($conn,$stmt_grant_stu1);
+    if(!$r1){
+        $conn->rollback();
+        echo "切换失败";
+        return false;
+    }
+    $stmt_grant_tea1 = "grant select on `course_select_system`.* to teacher";
+    $stmt_grant_tea2 = "grant update on `course_select_system`.`takes` to teacher";
+    $stmt_grant_tea3 = "grant update on `course_select_system`.`application` to teacher";
+    $stmt_grant_tea4 = "grant update on `course_select_system`.`section` to teacher";
+    $stmt_grant_tea5 = "grant update on `course_select_system`.`student` to teacher";
+    $r1 = mysqli_query($conn,$stmt_grant_tea1);
+    $r2 = mysqli_query($conn,$stmt_grant_tea2);
+    $r3 = mysqli_query($conn,$stmt_grant_tea3);
+    $r4 = mysqli_query($conn,$stmt_grant_tea4);
+    $r5 = mysqli_query($conn,$stmt_grant_tea5);
+    if(!$r1 || !$r2 || !$r3 || !$r4 || !$r5){
+        $conn->rollback();
+        echo "切换失败";
+        return false;
+    }
+    $stmt_flush = "flush privileges";
+    $query = mysqli_query($conn,$stmt_flush);
+    if(!$query){
+        $conn->rollback();
+        echo "切换失败";
+        return false;
+    }
     $conn->commit();
     $conn->autocommit(true);
     return true;

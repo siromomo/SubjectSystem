@@ -151,18 +151,24 @@ create table drops(
 );
 
 
-grant all privileges on `course_select_system`.* to collegeadmin;
+grant all privileges on `course_select_system`.* to collegeadmin WITH GRANT OPTION;
+
 grant select on `course_select_system`.* to student;
 grant insert on `course_select_system`.`application` to student;
 grant insert on `course_select_system`.`drops` to student;
 grant insert on `course_select_system`.`takes` to student;
 grant delete on `course_select_system`.`takes` to student;
+grant update on `course_select_system`.`section` to student;
+
 grant select on `course_select_system`.* to teacher;
 grant update on `course_select_system`.`takes` to teacher;
 grant update on `course_select_system`.`application` to teacher;
-grant delete on `course_select_system`.`section` to teacher;
-grant update on `course_select_system`.`section` to student;
+grant update on `course_select_system`.`section` to teacher;
 grant update on `course_select_system`.`student` to teacher;
+
+use mysql;
+grant all privileges on user to collegeadmin;
+grant create on user to collegeadmin;
 flush privileges;
 
 alter table takes add unique(student_id, sec_id, course_id, semester, year);

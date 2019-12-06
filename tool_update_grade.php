@@ -12,7 +12,7 @@ else{
     die();
 }
 
-$conn = connectToDB("127.0.0.1",$role,$role);
+$conn = connectToDB();
 
 function convert2cre($grade){
     $cre = 0;
