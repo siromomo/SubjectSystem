@@ -171,7 +171,29 @@ function refresh_page(){
     echo "<script>window.location.reload();</script>";
 }
 function time_slot_id_to_string($time_slot_id){
+    $AorP = substr($time_slot_id, 0, 1);
     $res = "";
+    if($AorP === 'K'){
+        $weekday = substr($time_slot_id, 3, 1);
+        switch ($weekday){
+            case 1: $res .= "周一";break;
+            case 2: $res .= "周二";break;
+            case 3: $res .= "周三";break;
+            case 4: $res .= "周四";break;
+            case 5: $res .= "周五";break;
+            case 6: $res .= "周六";break;
+            case 7: $res .= "周日";break;
+        }
+
+        $time_slot = substr($time_slot_id, 1, 1);
+        switch ($time_slot){
+            case 1: $res .= " 9:00-11:00 ";break;
+            case 2: $res .= " 13:30-15:30 ";break;
+            case 3: $res .= " 16:00-18:00 ";break;
+            case 4: $res .= " 18:30-20:30 ";break;
+        }
+        return $res;
+    }
     $weekday = substr($time_slot_id, 1, 1);
     switch ($weekday){
         case 1: $res .= "周一";break;
@@ -179,11 +201,13 @@ function time_slot_id_to_string($time_slot_id){
         case 3: $res .= "周三";break;
         case 4: $res .= "周四";break;
         case 5: $res .= "周五";break;
+        case 6: $res .= "周六";break;
+        case 7: $res .= "周日";break;
     }
-    $AorP = substr($time_slot_id, 0, 1);
+
     if($AorP === 'A'){
         $res .= "上午";
-    }else{
+    }else if($AorP === 'P'){
         $res .= "下午";
     }
     $time_slot = substr($time_slot_id, 3, 1);
@@ -558,7 +582,7 @@ function get_paper_list($conn, $student_id){
 }
 
 function get_test_time_place($conn, $test){
-    $stmt = $conn->prepare("select time_slot_id, classroom_id from exam_time_place 
+    $stmt = $conn->prepare("select time_slot_id from exam_time 
         where exam_id=?");
     if(!$stmt){
         echo mysqli_error($conn);
@@ -567,24 +591,15 @@ function get_test_time_place($conn, $test){
     $exam_id = $test->exam_id;
 
     $time_slot_id = '';
-    $classroom_id = '';
     $stmt->bind_param("s", $exam_id);
     $stmt->execute();
-    $stmt->bind_result($time_slot_id, $classroom_id);
+    $stmt->bind_result($time_slot_id);
 
-    $class_to_time = [];
+    $class_to_time_str = '';
 
     while($stmt->fetch()){
         $time_slot = time_slot_id_to_string($time_slot_id);
-        if(!isset($class_to_time[$classroom_id]))
-            $class_to_time[$classroom_id] = $time_slot;
-        else
-            $class_to_time[$classroom_id] .= (",".$time_slot);
-    }
-    $test->class_to_time = $class_to_time;
-    $class_to_time_str = '';
-    foreach($class_to_time as $class=>$time) {
-        $class_to_time_str .= ($time . " " . $class . "<br>");
+        $class_to_time_str .= $time_slot;
     }
     $test->class_to_time_str = $class_to_time_str;
 

@@ -4,13 +4,13 @@ require_once 'readExcel.php';
 
 session_start();
 if(!isset($_SESSION['st_id'])) {
-    jump_to_page("/SubjectSystem/index.php");
+    jump_to_page("index.php");
 }
 $role = $_SESSION['role'];
 if($role === 'teacher'){
-    jump_to_page("/SubjectSystem/personal_index_instructor.php");
+    jump_to_page("personal_index_instructor.php");
 }else if($role === 'student'){
-    jump_to_page("/SubjectSystem/personal_index_student.php");
+    jump_to_page("personal_index_student.php");
 }
 
 $conn = connectToDB();//"127.0.0.1","collegeadmin","collegeadmin"
@@ -770,7 +770,7 @@ $(window).on('popstate',function () {
 $(function () {
     $("#ini_btn").click(function () {
         $.ajax({
-            url:"/SubjectSystem/tool_change_status.php?toStatus=ini",
+            url:"tool_change_status.php?toStatus=ini",
             success:
                 function (data) {
                     switch (data) {
@@ -789,7 +789,7 @@ $(function () {
     })
     $("#sta_btn").click(function () {
         $.ajax({
-            url:"/SubjectSystem/tool_change_status.php?toStatus=sta",
+            url:"tool_change_status.php?toStatus=sta",
             success:
                 function (data) {
                     switch (data) {
@@ -807,7 +807,7 @@ $(function () {
     })
     $("#gra_btn").click(function () {
         $.ajax({
-            url:"/SubjectSystem/tool_change_status.php?toStatus=gra",
+            url:"tool_change_status.php?toStatus=gra",
             success:
                 function (data) {
                     switch (data) {
@@ -825,10 +825,10 @@ $(function () {
     })
     $("#exit_btn").click(function () {
         $.ajax({
-            url:"/SubjectSystem/logout.php",
+            url:"logout.php",
             success:
             function () {
-                window.location.href = "/SubjectSystem/index.php";
+                window.location.href = "index.php";
             }
 
         })
@@ -865,7 +865,7 @@ $(function () {
 
 
         $.ajax({
-            url:"/SubjectSystem/tool_update_grade.php?grade="+grade+"&course_id="+course_id.val()+"&sec_id="+sec_id.val()+"&semester="+semester.val()+"&year="+year.val()+"&stu_id="+stu_id.val(),
+            url:"tool_update_grade.php?grade="+grade+"&course_id="+course_id.val()+"&sec_id="+sec_id.val()+"&semester="+semester.val()+"&year="+year.val()+"&stu_id="+stu_id.val(),
             success:
                 function (data) {
                 // alert(data)
@@ -901,7 +901,7 @@ $(function () {
         var stu_id = course_id.prev();
 
         $.ajax({
-            url:"/SubjectSystem/tool_admin_drop_sec.php?grade="+grade+"&course_id="+course_id.val()+"&sec_id="+sec_id.val()+"&semester="+semester.val()+"&year="+year.val()+"&stu_id="+stu_id.val(),
+            url:"tool_admin_drop_sec.php?grade="+grade+"&course_id="+course_id.val()+"&sec_id="+sec_id.val()+"&semester="+semester.val()+"&year="+year.val()+"&stu_id="+stu_id.val(),
             success:
             function (data) {
                 switch (data) {
@@ -926,7 +926,7 @@ $(function () {
         var appli_id = td.prev().val();
 
         $.ajax({
-            url:"/SubjectSystem/tool_admin_handleAppli.php?appli_id="+appli_id+"&status=通过",
+            url:"tool_admin_handleAppli.php?appli_id="+appli_id+"&status=通过",
             success:
                 function (data) {
                     switch (data) {
@@ -950,7 +950,7 @@ $(function () {
         var appli_id = td.prev().prev().val();
 
         $.ajax({
-            url:"/SubjectSystem/tool_admin_handleAppli.php?appli_id="+appli_id+"&status=拒绝",
+            url:"tool_admin_handleAppli.php?appli_id="+appli_id+"&status=拒绝",
             success:
                 function (data) {
                     switch (data) {
@@ -977,7 +977,7 @@ $(function () {
         var course_id = sec_id.prev();
         var instructor_id = course_id.prev();
         $.ajax({
-            url:"/SubjectSystem/tool_remove_ins_from_sec.php?instructor_id="+instructor_id.val()+"&course_id="+course_id.val()+"&sec_id="+sec_id.val()+"&semester="+semester.val()+"&year="+year.val(),
+            url:"tool_remove_ins_from_sec.php?instructor_id="+instructor_id.val()+"&course_id="+course_id.val()+"&sec_id="+sec_id.val()+"&semester="+semester.val()+"&year="+year.val(),
             success:
             function (data) {
                 switch (data) {
@@ -1003,7 +1003,7 @@ $(function () {
         var sec_id = semester.prev();
         var course_id = sec_id.prev();
         $.ajax({
-            url:"/SubjectSystem/tool_delete_sec.php?course_id="+course_id.val()+"&sec_id="+sec_id.val()+"&semester="+semester.val()+"&year="+year.val(),
+            url:"tool_delete_sec.php?course_id="+course_id.val()+"&sec_id="+sec_id.val()+"&semester="+semester.val()+"&year="+year.val(),
             success:
                 function (data){
                     switch (data) {
@@ -1023,7 +1023,7 @@ $(function () {
     $("[name='delete_course']").click(function () {
         var course_id = $(this).prev().val();
         $.ajax({
-            url:"/SubjectSystem/tool_delete_course.php?course_id="+course_id,
+            url:"tool_delete_course.php?course_id="+course_id,
             success:
                 function (data){
                     switch (data) {

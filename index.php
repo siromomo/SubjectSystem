@@ -13,11 +13,11 @@ $conn_root = connectToDB();
 if(isset($_SESSION['st_id'])){
     $role = $_SESSION['role'];
     if($role === 'student'){
-        jump_to_page("/SubjectSystem/personal_index_student.php");
+        jump_to_page("personal_index_student.php");
     }else if($role === 'teacher'){
-        jump_to_page("/SubjectSystem/personal_index_instructor.php");
+        jump_to_page("personal_index_instructor.php");
     }else{
-        jump_to_page("/SubjectSystem/personal_index_root.php");
+        jump_to_page("personal_index_root.php");
     }
 }
 
@@ -35,7 +35,7 @@ if(isset($_POST['st_id'])) {
         if($st_name === 'root'){
             $_SESSION['role']='root';
             $_SESSION['st_id']='root';
-            jump_to_page("/SubjectSystem/personal_index_root.php");
+            jump_to_page("personal_index_root.php");
         }
     }
 
@@ -52,9 +52,9 @@ if(isset($_POST['st_id'])) {
         $_SESSION['st_id']=$st_id;
         alert_msg("登录成功");
         if($role === 'student'){
-            jump_to_page("/SubjectSystem/personal_index_student.php");
+            jump_to_page("personal_index_student.php");
         }else{
-            jump_to_page("/SubjectSystem/personal_index_instructor.php");
+            jump_to_page("personal_index_instructor.php");
         }
     }else{
         alert_msg("工号或姓名填写错误");

@@ -12,13 +12,13 @@ require_once 'check_privilege.php';
 
 session_start();
 if(!isset($_SESSION['st_id'])) {
-    jump_to_page("/SubjectSystem/index.php");
+    jump_to_page("index.php");
 }
 $role = $_SESSION['role'];
 if($role === 'teacher'){
-    jump_to_page("/SubjectSystem/personal_index_instructor.php");
+    jump_to_page("personal_index_instructor.php");
 }else if($role === 'root'){
-    jump_to_page("/SubjectSystem/personal_index_root.php");
+    jump_to_page("personal_index_root.php");
 }
 $st_id = $_SESSION['st_id'];
 $conn = connectToDB("127.0.0.1", $role, $role, "course_select_system");
@@ -37,6 +37,12 @@ if(isset($_GET['choose_or_drop'])){
         jump_to_page("/SubjectSystem/personal_index_student.php");
     else
         echo "别刷新，先把get后面的参数删了";
+}
+$search_type = null;
+$search_content = null;
+if(isset($_GET['search_type']) && isset($_GET['search_content'])){
+    $search_type = $_GET['search_type'];
+    $search_content = $_GET['search_content'];
 }
 
 //var_dump(check_if_have_privilege($conn,"application","UPDATE"));
@@ -101,7 +107,7 @@ $paper_list = get_paper_list($conn, $st_id);
     </div>
     <div class="row">
         <div class="col-sm-offset-11">
-            <button type="button" class="btn bg-primary" id="exit_btn" onclick="f()">退出</button>
+            <button type="button" class="btn bg-primary" id="exit_btn">退出</button>
         </div>
     </div>
     <div class="row">
@@ -169,6 +175,22 @@ $paper_list = get_paper_list($conn, $st_id);
                 ?>
                 </tbody>
             </table>
+
+            <form class="form-inline" action="personal_index_student.php">
+                <div class="col-sm-9">
+                    <label for="search">筛选可选课程</label>
+                    <input name="search_content" id="search_content" type="text" placeholder="输入筛选课程条件">
+                    <input type="radio" name="search_type" value="course_id" id="search_course_id">
+                    <label for="search_course_id">按照课程id</label>
+                    <input type="radio" name="search_type" value="course_name" id="search_course_name">
+                    <label for="search_course_name">按照课程名</label>
+                    <input type="radio" name="search_type" value="sec_id" id="search_sec_id">
+                    <label for="search_sec_id">按照课程段id</label>
+                </div>
+                <div class="col-sm-1">
+                    <input type="submit" class="btn btn-default" value="筛选">
+                </div>
+            </form>
             <table class="table table-striped">
                 <caption class="table panel-heading"><h3>可选课程列表</h3></caption>
                 <thead>
@@ -188,7 +210,25 @@ $paper_list = get_paper_list($conn, $st_id);
                 <tbody>
                 <?php
                 foreach ($sec_set as $sec){
-                    echo "<tr>
+                    $valid = false;
+                    if($search_type === null){
+                        $valid = true;
+                    }
+                    else if($search_type === 'course_id'){
+                        if($sec->course_id == $search_content){
+                            $valid = true;
+                        }
+                    } else if($search_type === 'course_name'){
+                        if($sec->course_name == $search_content){
+                            $valid = true;
+                        }
+                    } else if($search_type === 'sec_id'){
+                        if($sec->sec_id == $search_content){
+                            $valid = true;
+                        }
+                    }
+                    if($valid) {
+                        echo "<tr>
                             <td>$sec->course_id</td>
                             <td>$sec->sec_id</td>
                             <td>$sec->semester</td>
@@ -200,8 +240,8 @@ $paper_list = get_paper_list($conn, $st_id);
                             <td>$sec->class_to_time_str</td>
                             <td>";
 
-                    if($sec->number > $sec->selected_num) {
-                        echo "<form action='personal_index_student.php'>
+                        if ($sec->number > $sec->selected_num) {
+                            echo "<form action='personal_index_student.php'>
                                 <input type='hidden' name='course_id' value='$sec->course_id'>
                                 <input type='hidden' name='sec_id' value='$sec->sec_id'>
                                 <input type='hidden' name='semester' value='$sec->semester'>
@@ -209,22 +249,22 @@ $paper_list = get_paper_list($conn, $st_id);
                                 <input type='hidden' name='student_id' value='$st_id'>
                                 <input type='hidden' name='choose_or_drop' value='choose'>
                                 <input type='submit' value='选课' class='btn btn-primary ";
-                        if(!check_if_have_privilege($conn,"takes","INSERT"))
-                            echo "disabled";
-                        echo "' id='choose_lesson'>
+                            if (!check_if_have_privilege($conn, "takes", "INSERT"))
+                                echo "disabled";
+                            echo "' id='choose_lesson'>
                             </form>";
-                    }
-                    else{
-                        echo "<a href='make_application_student.php?course_id=$sec->course_id&sec_id=$sec->sec_id&semester=$sec->semester&year=$sec->year' 
+                        } else {
+                            echo "<a href='make_application_student.php?course_id=$sec->course_id&sec_id=$sec->sec_id&semester=$sec->semester&year=$sec->year' 
                                                 class='btn btn-primary ";
-                        if(!check_if_have_privilege($conn,"application","INSERT"))
-                            echo "disabled";
-                        echo "'>申请</a>";
-                    }
+                            if (!check_if_have_privilege($conn, "application", "INSERT"))
+                                echo "disabled";
+                            echo "'>申请</a>";
+                        }
 
-                    echo "
+                        echo "
                             </td>
                           </tr>";
+                    }
                 }
                 ?>
 

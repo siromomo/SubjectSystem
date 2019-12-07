@@ -11,14 +11,14 @@ require_once 'components.php';
 
 session_start();
 if(!isset($_SESSION['st_id'])) {
-    jump_to_page("/SubjectSystem/index.php");
+    jump_to_page("index.php");
 }
 
 $role = $_SESSION['role'];
 if($role === 'student'){
-    jump_to_page("/SubjectSystem/personal_index_student.php");
+    jump_to_page("personal_index_student.php");
 }else if($role === 'root'){
-    jump_to_page("/SubjectSystem/personal_index_root.php");
+    jump_to_page("personal_index_root.php");
 }
 $st_id = $_SESSION['st_id'];
 $conn = connectToDB("127.0.0.1", $role, $role, "course_select_system");

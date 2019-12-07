@@ -12,7 +12,7 @@
  */
 function connectToDB($servername = "127.0.0.1",
     $username = "root",
-    $password = "213Dzfzqksdl",
+    $password = "090029",
     $dbName = "course_select_system")
 {
 // 创建连接
