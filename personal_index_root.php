@@ -19,6 +19,8 @@ $conn = connectToDB();//"127.0.0.1","collegeadmin","collegeadmin"
 //insertIntoChartBasic("course", ["course_id", "course_name", "credit", "class_hours"], "ssii", $conn);
 //insertIntoChartBasic("time_slot", ["time_slot_id", "start_time", "end_time", "day_of_week"], "sssi", $conn);
 
+
+
 ?>
 
 <!DOCTYPE html>
@@ -656,7 +658,9 @@ $conn = connectToDB();//"127.0.0.1","collegeadmin","collegeadmin"
                                 <input type='hidden' name='del_sec_id' value='$sec->sec_id'>
                                 <input type='hidden' name='del_semester' value='$sec->semester'>
                                 <input type='hidden' name='del_year' value='$sec->year'>
-                                <input type='submit' value='删除' class='btn btn-primary' name='delete_lesson'>
+                                <input type='submit' value='删除' class='btn btn-primary' name='delete_lesson'";
+                                if(get_system_status($conn)==='grading') {echo "disabled";}
+                                echo">
                             </form></td>
                           </tr>";
                             }
@@ -746,7 +750,13 @@ $conn = connectToDB();//"127.0.0.1","collegeadmin","collegeadmin"
                 <div class="row">
                     <label>点击后选/退课系统将关闭，教师可以随时进行登分(状态:grading)</label>
                 </div>
-
+                <br/>
+                <div class="row">
+                    <button class="btn btn-primary" id="tst_btn">点此分配考试教室</button>
+                </div>
+                <div class="row">
+                    <label>点击后将根据考试时间信息自动分配考试教室</label>
+                </div>
             </div>
         </div>
     </div>
@@ -768,6 +778,26 @@ $(window).on('popstate',function () {
 });
 
 $(function () {
+    $("#tst_btn").click(function () {
+        $.ajax({
+            url:'tool_admin_arr_test.php',
+            success:
+                function (data) {
+                    switch (data) {
+                        case "0":
+                            // $("#now_status").text("系统状态:initializing");
+                            alert("分配成功");
+                            window.location.reload();
+                            break;
+                        case "1":
+                            alert("系统错误，分配失败");
+                            break;
+                        default:
+                            alert(data);
+                    }
+                }
+        })
+    })
     $("#ini_btn").click(function () {
         $.ajax({
             url:"tool_change_status.php?toStatus=ini",

@@ -582,7 +582,7 @@ function get_paper_list($conn, $student_id){
 }
 
 function get_test_time_place($conn, $test){
-    $stmt = $conn->prepare("select time_slot_id from exam_time 
+    $stmt = $conn->prepare("select time_slot_id, classroom_id from exam_time_place 
         where exam_id=?");
     if(!$stmt){
         echo mysqli_error($conn);
@@ -591,15 +591,18 @@ function get_test_time_place($conn, $test){
     $exam_id = $test->exam_id;
 
     $time_slot_id = '';
+    $classroom_id = '';
     $stmt->bind_param("s", $exam_id);
     $stmt->execute();
-    $stmt->bind_result($time_slot_id);
+    $stmt->bind_result($time_slot_id, $classroom_id);
 
     $class_to_time_str = '';
 
     while($stmt->fetch()){
         $time_slot = time_slot_id_to_string($time_slot_id);
         $class_to_time_str .= $time_slot;
+        $class_to_time_str .= " ";
+        $class_to_time_str .= $classroom_id;
     }
     $test->class_to_time_str = $class_to_time_str;
 
@@ -1807,5 +1810,71 @@ function change_status2grading($conn){
     }
     $conn->commit();
     $conn->autocommit(true);
+    return true;
+}
+function arrange_test($conn){
+    $conn->autocommit(false);
+    $stmt1 = $conn->prepare("select exam_id, time_slot_id, selected_num from 
+                                                test natural join exam natural join section natural join exam_time");
+    $r1 = $stmt1->execute();
+    if(!$r1){
+        alert_error($conn);
+        $conn->rollback();
+        return false;
+    }
+    $stmt1->store_result();
+    $exam_id = 0;
+    $time_slot_id = '';
+    $selected_num = 0;
+    $stmt1->bind_result($exam_id, $time_slot_id, $selected_num);
+    $stmt2 = $conn->prepare("select classroom_id, capacity from classroom");
+    $r2 = $stmt2->execute();
+    if(!$r2){
+        alert_error($conn);
+        $conn->rollback();
+        return false;
+    }
+    $stmt2->store_result();
+    $classroom_id = '';
+    $capacity = 0;
+    $stmt2->bind_result($classroom_id, $capacity);
+    while($stmt1->fetch()){
+        $success = false;
+        while($stmt2->fetch()){
+            if($capacity >= $selected_num){
+                $stmt3 = $conn->prepare("select count(exam_id) from exam_time_place where time_slot_id=? and classroom_id=?");
+                $stmt3->bind_param("ss", $time_slot_id, $classroom_id);
+                $r3 = $stmt3->execute();
+                if(!$r3){
+                    alert_error($conn);
+                    $conn->rollback();
+                    return false;
+                }
+                $num = 0;
+                $stmt3->store_result();
+                $stmt3->bind_result($num);
+                $stmt3->fetch();
+                $stmt3->free_result();
+                if($num > 0)
+                    continue;
+                else{
+                    $stmt4 = $conn->prepare("insert into exam_time_place (exam_id, time_slot_id, classroom_id) values (?,?,?)");
+                    $stmt4->bind_param("iss", $exam_id, $time_slot_id, $classroom_id);
+                    $r4 = $stmt4->execute();
+                    if(!$r4){
+                        alert_error($conn);
+                        $conn->rollback();
+                        return false;
+                    }
+                    $success = true;
+                    break;
+                }
+            }
+        }
+        if(!$success){
+            echo ("考试".$exam_id."当前没有可用教室\n");
+        }
+    }
+    $conn->commit();
     return true;
 }
