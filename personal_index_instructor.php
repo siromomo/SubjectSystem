@@ -29,7 +29,7 @@ if(isset($_GET['new_status'])){
     $r = handle_application($conn, $app_id, $new_status);
     if($r){
         alert_msg("处理申请成功");
-        jump_to_page("/SubjectSystem/personal_index_instructor.php");
+        jump_to_page("personal_index_instructor.php");
     }
 }
 

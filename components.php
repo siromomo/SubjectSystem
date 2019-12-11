@@ -1,5 +1,6 @@
 <?php
 require_once 'check_privilege.php';
+require_once 'process_local_storage_helper.php';
 /*
  * component：工具函数类
  * 相关函数：
@@ -155,6 +156,7 @@ class Instructor{
     }
 }
 
+
 function alert_error($conn, $err = null){
     if($err === null) {
         $err = mysqli_error($conn);
@@ -225,6 +227,10 @@ function time_slot_id_to_string($time_slot_id){
 
 function take_lesson($conn, $student_id, $sec_id, $year, $course_id, $semester){
     $conn->autocommit(false);
+    $allArgs = func_get_args();
+    $params = array_slice($allArgs, 1);
+    $param_string = join("|||", $params);
+    add_local_storage("take_lesson", $param_string);
     $select_time_slot = $conn->prepare("select time_slot_id from class_time_place 
         where (sec_id, course_id, semester, year) = (?, ?, ?, ?)");
     $select_time_slot_2 = $conn->prepare("select time_slot_id from class_time_place 
@@ -240,6 +246,7 @@ function take_lesson($conn, $student_id, $sec_id, $year, $course_id, $semester){
     if(!$ts1){
         alert_error($conn);
         $conn->rollback();
+        clear_local_storage();
         return false;
     }
     $time_slot_1 = '';
@@ -248,12 +255,14 @@ function take_lesson($conn, $student_id, $sec_id, $year, $course_id, $semester){
     if(!$select_time_slot_2){
         alert_error($conn);
         $conn->rollback();
+        clear_local_storage();
         return false;
     }
     $select_time_slot_2->bind_param("s", $student_id);
     $ts2 = $select_time_slot_2->execute();
     if(!$ts2){
         $conn->rollback();
+        clear_local_storage();
         return false;
     }
     $time_slot_2 = '';
@@ -264,6 +273,7 @@ function take_lesson($conn, $student_id, $sec_id, $year, $course_id, $semester){
         while($select_time_slot_2->fetch()){
             if($time_slot_1 === $time_slot_2){
                 alert_msg("学生 $student_id 选的课程 $course_id 与已选课程时间冲突");
+                clear_local_storage();
                 $conn->rollback();
                 return false;
             }
@@ -275,6 +285,7 @@ function take_lesson($conn, $student_id, $sec_id, $year, $course_id, $semester){
     $ts3 = $check_selected_num->execute();
     if(!$ts3){
         alert_error($conn);
+        clear_local_storage();
         $conn->rollback();
         return false;
     }
@@ -285,6 +296,7 @@ function take_lesson($conn, $student_id, $sec_id, $year, $course_id, $semester){
     if($selected_num >= $number){
         alert_msg("学生 $student_id 选的课程 $course_id 选课人数已满");
         $conn->rollback();
+        clear_local_storage();
         return false;
     }
     $check_selected_num->free_result();
@@ -297,6 +309,7 @@ function take_lesson($conn, $student_id, $sec_id, $year, $course_id, $semester){
     if(!$et1){
         alert_error($conn);
         $conn->rollback();
+        clear_local_storage();
         return false;
     }
     $exam_time_1 = '';
@@ -307,6 +320,7 @@ function take_lesson($conn, $student_id, $sec_id, $year, $course_id, $semester){
     if(!$et2){
         alert_error($conn);
         $conn->rollback();
+        clear_local_storage();
         return false;
     }
     $exam_time_2 = '';
@@ -317,6 +331,7 @@ function take_lesson($conn, $student_id, $sec_id, $year, $course_id, $semester){
             if($exam_time_1 === $exam_time_2){
                 alert_msg("学生 $student_id 选的课程 $course_id 与已选课程考试时间冲突");
                 $conn->rollback();
+                clear_local_storage();
                 return false;
             }
         }
@@ -328,6 +343,7 @@ function take_lesson($conn, $student_id, $sec_id, $year, $course_id, $semester){
     if(!$r){
         alert_error($conn);
         $conn->rollback();
+        clear_local_storage();
         return false;
     }
     $selected_num++;
@@ -336,9 +352,11 @@ function take_lesson($conn, $student_id, $sec_id, $year, $course_id, $semester){
     if(!$r){
         alert_error($conn);
         $conn->rollback();
+        clear_local_storage();
         return false;
     }
     $conn->commit();
+    clear_local_storage();
     return true;
 }
 
@@ -499,15 +517,24 @@ function choose_lesson($conn, $student_id, $sec_id, $course_id, $semester, $year
 
 function drop_lesson($conn, $student_id, $sec_id, $course_id, $semester, $year){
     $conn->autocommit(false);
+
+    $allArgs = func_get_args();
+    $params = array_slice($allArgs, 1);
+    $param_string = join("|||", $params);
+    add_local_storage("drop_lesson", $param_string);
     $stmt = $conn->prepare("insert into drops(student_id, sec_id, course_id, semester, year) values(?,?,?,?,?)");
     if(!$stmt){
         alert_error($conn);
+        $conn->rollback();
+        clear_local_storage();
         return false;
     }
     $stmt->bind_param("sissi", $student_id, $sec_id, $course_id, $semester, $year);
     $r1 = $stmt->execute();
     if(!$r1){
         alert_error($conn);
+        $conn->rollback();
+        clear_local_storage();
         return false;
     }
     $stmt1 = $conn->prepare("delete from takes where (student_id, sec_id, course_id, semester, year) = (?,?,?,?,?)");
@@ -516,6 +543,7 @@ function drop_lesson($conn, $student_id, $sec_id, $course_id, $semester, $year){
     if(!$r1){
         alert_error($conn);
         $conn->rollback();
+        clear_local_storage();
         return false;
     }
     $stmt2 = $conn->prepare("update section set selected_num=
@@ -526,12 +554,14 @@ function drop_lesson($conn, $student_id, $sec_id, $course_id, $semester, $year){
     if(!$r2){
         alert_error($conn);
         $conn->rollback();
+        clear_local_storage();
         return false;
     }
     $stmt->free_result();
     $stmt1->free_result();
     $stmt2->free_result();
     $conn->commit();
+    clear_local_storage();
     return true;
 }
 
@@ -611,12 +641,19 @@ function get_test_time_place($conn, $test){
 
 function make_application($conn, $student_id, $sec_id, $course_id, $semester, $year, $appli_content){
     $conn->autocommit(false);
+
+    $allArgs = func_get_args();
+    $params = array_slice($allArgs, 1);
+    $param_string = join("|||", $params);
+    add_local_storage("make_application", $param_string);
     $valid = check_section_available_to_application($conn, $student_id, $sec_id, $course_id, $semester, $year);
     if(!$valid){
+        clear_local_storage();
         return false;
     }
     if($valid != 'valid'){
         alert_msg($valid);
+        clear_local_storage();
         $conn->rollback();
         return false;
     }
@@ -624,6 +661,7 @@ function make_application($conn, $student_id, $sec_id, $course_id, $semester, $y
              values (?,?,?,?,?,?)");
     if(!$stmt){
         alert_error($conn);
+        clear_local_storage();
         $conn->rollback();
         return false;
     }
@@ -631,10 +669,12 @@ function make_application($conn, $student_id, $sec_id, $course_id, $semester, $y
     $r1 = $stmt->execute();
     if(!$r1){
         alert_error($conn);
+        clear_local_storage();
         $conn->rollback();
         return false;
     }
     $conn->commit();
+    clear_local_storage();
     return true;
 }
 
@@ -745,12 +785,18 @@ function get_app_for_sec_set($conn, $sec_set){
 
 function handle_application($conn, $app_id, $new_app_status){
     $conn->autocommit(false);
+
+    $allArgs = func_get_args();
+    $params = array_slice($allArgs, 1);
+    $param_string = join("|||", $params);
+    add_local_storage("handle_application", $param_string);
     $stmt = $conn->prepare("update application set appii_status=? where appli_id=?");
     $stmt->bind_param("si", $new_app_status, $app_id);
     $r = $stmt->execute();
     if(!$r){
         alert_error($conn);
         $conn->rollback();
+        clear_local_storage();
         return false;
     }
     if($new_app_status == '通过') {
@@ -758,6 +804,7 @@ function handle_application($conn, $app_id, $new_app_status){
         if(!$stmt1){
             alert_error($conn);
             $conn->rollback();
+            clear_local_storage();
             return false;
         }
         $stmt1->bind_param("i", $app_id);
@@ -776,6 +823,7 @@ function handle_application($conn, $app_id, $new_app_status){
         if (!$stmt2) {
             alert_error($conn);
             $conn->rollback();
+            clear_local_storage();
             return false;
         }
         $stmt2->bind_param("issiissi", $sec_id, $course_id, $semester, $year, $sec_id, $course_id, $semester, $year);
@@ -783,6 +831,7 @@ function handle_application($conn, $app_id, $new_app_status){
         if(!$r2){
             alert_error($conn);
             $conn->rollback();
+            clear_local_storage();
             return false;
         }
         $stmt3 = $conn->prepare("insert into takes (student_id, sec_id, course_id, semester, year)
@@ -790,6 +839,7 @@ function handle_application($conn, $app_id, $new_app_status){
         if(!$stmt3){
             alert_error($conn);
             $conn->rollback();
+            clear_local_storage();
             return false;
         }
         $stmt3->bind_param("sissi", $student_id, $sec_id, $course_id, $semester, $year);
@@ -797,6 +847,7 @@ function handle_application($conn, $app_id, $new_app_status){
         if(!$r3){
             alert_error($conn);
             $conn->rollback();
+            clear_local_storage();
             return false;
         }
 
@@ -805,6 +856,7 @@ function handle_application($conn, $app_id, $new_app_status){
         if(!$stmt4){
             alert_error($conn);
             $conn->rollback();
+            clear_local_storage();
             return false;
         }
         $stmt4->bind_param("issi", $sec_id, $course_id, $semester, $year);
@@ -812,6 +864,7 @@ function handle_application($conn, $app_id, $new_app_status){
         if(!$r4){
             alert_error($conn);
             $conn->rollback();
+            clear_local_storage();
             return false;
         }
         $selected_num = 0;
@@ -827,16 +880,23 @@ function handle_application($conn, $app_id, $new_app_status){
         $stmt4->free_result();
     }
     $conn->commit();
+    clear_local_storage();
     return true;
 }
 
 function handle_unavailable_applications($conn, $sec_id, $course_id, $semester, $year){
     $conn->autocommit(false);
+
+    $allArgs = func_get_args();
+    $params = array_slice($allArgs, 1);
+    $param_string = join("|||", $params);
+    add_local_storage("handle_unavailable_applications", $param_string);
     $stmt = $conn->prepare("update application set appii_status='拒绝' 
             where (sec_id, course_id, semester, year)=(?,?,?,?)");
     if(!$stmt){
         alert_error($conn);
         $conn->rollback();
+        clear_local_storage();
         return false;
     }
     $stmt->bind_param("issi", $sec_id, $course_id, $semester, $year);
@@ -844,9 +904,11 @@ function handle_unavailable_applications($conn, $sec_id, $course_id, $semester, 
     if(!$r){
         alert_error($conn);
         $conn->rollback();
+        clear_local_storage();
         return false;
     }
     $conn->commit();
+    clear_local_storage();
     return true;
 }
 
@@ -881,6 +943,11 @@ function get_member_for_section($conn, $sec_id, $course_id, $semester, $year){
 
 function commit_grade_for_one_student($conn,$student_id,$course_id,$sec_id,$semester,$year,$grade){
     $cre = 0;
+
+    $allArgs = func_get_args();
+    $params = array_slice($allArgs, 1);
+    $param_string = join("|||", $params);
+    add_local_storage("commit_grade_for_one_student", $param_string);
     switch ($grade){
         case "A":
             $cre = 4.0;
@@ -951,6 +1018,7 @@ function commit_grade_for_one_student($conn,$student_id,$course_id,$sec_id,$seme
     $r = $stmt->execute();
     if(!$r){
         $conn->rollback();
+        clear_local_storage();
         echo "<script>alert('此学生成绩导入失败')</script>";
         alert_error($conn);
         $stmt->free_result();
@@ -990,6 +1058,7 @@ function commit_grade_for_one_student($conn,$student_id,$course_id,$sec_id,$seme
     $r = $stmt_update_credit_gpa->execute();
     if(!$r){
         $conn->rollback();
+        clear_local_storage();
         echo "<script>alert('此学生学分与绩点导入失败')</script>";
         alert_error($conn);
         $stmt_update_credit_gpa->free_result();
@@ -998,12 +1067,18 @@ function commit_grade_for_one_student($conn,$student_id,$course_id,$sec_id,$seme
     $stmt_update_credit_gpa->free_result();
 
     $conn->commit();
+    clear_local_storage();
     $conn->autocommit(true);
     return true;
 }
 
 
 function update_student_personal_info($conn,$student){
+    $allArgs = func_get_args();
+    $params = array_slice($allArgs, 1);
+    $params[0] = json_encode($student);
+    $param_string = join("|||", $params);
+    add_local_storage("update_student_personal_info", $param_string);
     $stmt_not_graduate = $conn->prepare("update student set student_name=?,total_credit=?,gpa=?,enroll_time=?,graduate_time=null where student_id=?");
     $stmt_graduated = $conn->prepare("update student set student_name=?,total_credit=?,gpa=?,enroll_time=?,graduate_time=? where student_id=?");
     if(empty($student->graduate_time)||strlen($student->graduate_time) == 0){
@@ -1016,10 +1091,15 @@ function update_student_personal_info($conn,$student){
     if(!$r){
         echo "<script>alert('此学生信息更新失败')</script>";
     }
+    clear_local_storage();
 }
 
 function delete_student_personal_info($conn,$id){
     $conn->autocommit(false);
+    $allArgs = func_get_args();
+    $params = array_slice($allArgs, 1);
+    $param_string = join("|||", $params);
+    add_local_storage("delete_student_personal_info", $param_string);
     //删除申请
     $stmt_delete_in_appli = $conn->prepare("delete from application where student_id = ?");
     $stmt_delete_in_appli->bind_param("s",$id);
@@ -1028,6 +1108,7 @@ function delete_student_personal_info($conn,$id){
 //    var_dump($stmt_delete_in_appli);
     if(!$r){
         $conn->rollback();
+        clear_local_storage();
         $stmt_delete_in_appli->free_result();
         echo "<script>alert('删除此学生的申请记录失败，删除失败')</script>";
         return false;
@@ -1039,6 +1120,7 @@ function delete_student_personal_info($conn,$id){
     $r = $stmt_takes->execute();
     if(!$r){
         $conn->rollback();
+        clear_local_storage();
         $stmt_takes->free_result();
         echo "<script>alert('删除此学生的选课记录失败，删除失败')</script>";
         return false;
@@ -1050,6 +1132,7 @@ function delete_student_personal_info($conn,$id){
     $r = $stmt_drops->execute();
     if(!$r){
         $conn->rollback();
+        clear_local_storage();
         $stmt_drops->free_result();
         echo "<script>alert('删除此学生的退课记录失败，删除失败')</script>";
         return false;
@@ -1061,6 +1144,7 @@ function delete_student_personal_info($conn,$id){
     $r = $stmt_take_exam->execute();
     if(!$r){
         $conn->rollback();
+        clear_local_storage();
         $stmt_take_exam->free_result();
         echo "<script>alert('删除此学生的考试记录失败，删除失败')</script>";
         return false;
@@ -1072,6 +1156,7 @@ function delete_student_personal_info($conn,$id){
     $r = $stmt_student->execute();
     if(!$r){
         $conn->rollback();
+        clear_local_storage();
         $stmt_student->free_result();
         echo "<script>alert('删除此学生的信息记录失败，删除失败')</script>";
         return false;
@@ -1079,11 +1164,17 @@ function delete_student_personal_info($conn,$id){
     $stmt_student->free_result();
 
     $conn->commit();
+    clear_local_storage();
     $conn->autocommit(true);
     return true;
 }
 
 function update_instructor($conn,$instructor){
+    $allArgs = func_get_args();
+    $params = array_slice($allArgs, 1);
+    $params[0] = json_encode($instructor);
+    $param_string = join("|||", $params);
+    add_local_storage("update_instructor", $param_string);
     $stmt = $conn->prepare("update instructor set instructor_name=?,hire_time=?,quit_time=null where instructor_id=?");
     $stmt2 = $conn->prepare("update instructor set instructor_name=?,hire_time=?,quit_time=? where instructor_id=?");
     if(empty($instructor->quit_time)||strlen($instructor->quit_time)==0){
@@ -1095,22 +1186,30 @@ function update_instructor($conn,$instructor){
     }
     if(!$r){
         echo "<script>alert('更改此教师信息失败')</script>";
+        clear_local_storage();
         return false;
     }
+    clear_local_storage();
     $stmt2->free_result();
     $stmt->free_result();
     return true;
 }
 
 function delete_teacher($conn,$instructor_id){
+    $allArgs = func_get_args();
+    $params = array_slice($allArgs, 1);
+    $param_string = join("|||", $params);
+    add_local_storage("delete_teacher", $param_string);
     $stmt = $conn->prepare("delete from instructor where instructor_id=?");
     $stmt->bind_param("s",$instructor_id);
     $r = $stmt->execute();
 //    var_dump($r);
     if(!$r){
         echo "<script>alert('此教师有开课记录，无法删除')</script>";
+        clear_local_storage();
         return false;
     }
+    clear_local_storage();
     $stmt->free_result();
     return true;
 }
@@ -1124,6 +1223,11 @@ from `section` natural join course where course_id=?");
 }
 
 function import_one_student($conn,$student){
+    $allArgs = func_get_args();
+    $params = array_slice($allArgs, 1);
+    $params[0] = json_encode($student);
+    $param_string = join("|||", $params);
+    add_local_storage("import_one_student", $param_string);
     $stmt = $conn->prepare("insert into student (student_id,student_name,total_credit,gpa,enroll_time,graduate_time) values (?,?,?,?,?,?)");
     $stmt_null = $conn->prepare("insert into student (student_id,student_name,total_credit,gpa,enroll_time,graduate_time) values (?,?,?,?,?,null)");
     if(empty($student->graduate_time)||strlen($student->graduate_time)==0){
@@ -1135,11 +1239,18 @@ function import_one_student($conn,$student){
     }
     if(!$r){
         echo "<script>alert('添加学生失败，检查学生学号')</script>";
+        clear_local_storage();
         return false;
     }
+    clear_local_storage();
     return true;
 }
 function import_one_instructor($conn,$instructor){
+    $allArgs = func_get_args();
+    $params = array_slice($allArgs, 1);
+    $params[0] = json_encode($instructor);
+    $param_string = join("|||", $params);
+    add_local_storage("import_one_instructor", $param_string);
     $stmt = $conn->prepare("insert into instructor (instructor_id,instructor_name,hire_time,quit_time) values (?,?,?,?)");
     $stmt_null = $conn->prepare("insert into instructor (instructor_id,instructor_name,hire_time,quit_time) values (?,?,?,null)");
     if(empty($instructor->quit_time)||strlen($instructor->quit_time)==0){
@@ -1151,11 +1262,17 @@ function import_one_instructor($conn,$instructor){
     }
     if(!$r){
         echo "<script>alert('添加教师失败，检查教师工号')</script>";
+        clear_local_storage();
         return false;
     }
+    clear_local_storage();
     return true;
 }
-function delete_section($conn,$course_id,$sec_id,$semester,$year){//TODO 时间限制
+function delete_section($conn,$course_id,$sec_id,$semester,$year){//TODO 时间限制 DO了
+    $allArgs = func_get_args();
+    $params = array_slice($allArgs, 1);
+    $param_string = join("|||", $params);
+    add_local_storage("delete_section", $param_string);
     $conn->autocommit(false);
     $stmt_check = $conn->prepare("select grade from takes where course_id=? and sec_id=? and semester=? and `year`=? and grade != null");
     $stmt_check->bind_param("sisi",$course_id,$sec_id,$semester,$year);
@@ -1164,6 +1281,7 @@ function delete_section($conn,$course_id,$sec_id,$semester,$year){//TODO 时间�
     if($check_result->num_rows){
         $conn->rollback();
         echo "此课程已经登分，无法删除";
+        clear_local_storage();
         return false;
     }
     $stmt_check->free_result();
@@ -1174,6 +1292,7 @@ function delete_section($conn,$course_id,$sec_id,$semester,$year){//TODO 时间�
     if(!$r){
         $conn->rollback();
         echo "删除失败，请检查";
+        clear_local_storage();
         return false;
     }
     $stmt_del_appli->free_result();
@@ -1184,6 +1303,7 @@ function delete_section($conn,$course_id,$sec_id,$semester,$year){//TODO 时间�
     if(!$r){
         $conn->rollback();
         echo "删除失败，请检查";
+        clear_local_storage();
         return false;
     }
     $stmt_del_ctp->free_result();
@@ -1194,6 +1314,7 @@ function delete_section($conn,$course_id,$sec_id,$semester,$year){//TODO 时间�
     if(!$r){
         $conn->rollback();
         echo "删除失败，请检查";
+        clear_local_storage();
         return false;
     }
     $stmt_del_drops->free_result();
@@ -1204,6 +1325,7 @@ function delete_section($conn,$course_id,$sec_id,$semester,$year){//TODO 时间�
     if(!$r){
         $conn->rollback();
         echo "删除失败，请检查";
+        clear_local_storage();
         return false;
     }
     $stmt_del_takes->free_result();
@@ -1214,6 +1336,7 @@ function delete_section($conn,$course_id,$sec_id,$semester,$year){//TODO 时间�
     if(!$r){
         $conn->rollback();
         echo "删除失败，请检查";
+        clear_local_storage();
         return false;
     }
     $stmt_del_teaches->free_result();
@@ -1234,6 +1357,7 @@ function delete_section($conn,$course_id,$sec_id,$semester,$year){//TODO 时间�
     if(!$r){
         $conn->rollback();
         echo "删除失败，请检查";
+        clear_local_storage();
         return false;
     }
     $stmt_del_te->free_result();
@@ -1244,6 +1368,7 @@ function delete_section($conn,$course_id,$sec_id,$semester,$year){//TODO 时间�
     if(!$r){
         $conn->rollback();
         echo "删除失败，请检查";
+        clear_local_storage();
         return false;
     }
     $stmt_del_etp->free_result();
@@ -1254,6 +1379,7 @@ function delete_section($conn,$course_id,$sec_id,$semester,$year){//TODO 时间�
     if(!$r){
         $conn->rollback();
         echo "删除失败，请检查";
+        clear_local_storage();
         return false;
     }
     $stmt_del_et->free_result();
@@ -1264,6 +1390,7 @@ function delete_section($conn,$course_id,$sec_id,$semester,$year){//TODO 时间�
     if(!$r){
         $conn->rollback();
         echo "删除失败，请检查";
+        clear_local_storage();
         return false;
     }
     $stmt_del_paper->free_result();
@@ -1274,6 +1401,7 @@ function delete_section($conn,$course_id,$sec_id,$semester,$year){//TODO 时间�
     if(!$r){
         $conn->rollback();
         echo "删除失败，请检查";
+        clear_local_storage();
         return false;
     }
     $stmt_del_test->free_result();
@@ -1284,6 +1412,7 @@ function delete_section($conn,$course_id,$sec_id,$semester,$year){//TODO 时间�
     if(!$r){
         $conn->rollback();
         echo "删除失败，请检查";
+        clear_local_storage();
         return false;
     }
     $stmt_del_exam->free_result();
@@ -1295,33 +1424,46 @@ function delete_section($conn,$course_id,$sec_id,$semester,$year){//TODO 时间�
     if(!$r){
         $conn->rollback();
         echo "删除失败，请检查";
+        clear_local_storage();
         return false;
     }
     $stmt_del_section->free_result();
 
     $conn->commit();
     $conn->autocommit(true);
+    clear_local_storage();
     return true;
 
 }
 function delete_course($conn,$course_id){
+    $allArgs = func_get_args();
+    $params = array_slice($allArgs, 1);
+    $param_string = join("|||", $params);
+    add_local_storage("delete_course", $param_string);
     $stmt = $conn->prepare("delete from course where course_id = ?");
     $stmt->bind_param("s",$course_id);
     $r = $stmt->execute();
     if(!$r){
         echo "该课程有开课信息，现在无法删除";
+        clear_local_storage();
         return false;
     }
     $stmt->free_result();
+    clear_local_storage();
     return true;
 }
 function import_one_course($conn,$course_id,$course_name,$course_credit,$class_hours){
+    $allArgs = func_get_args();
+    $params = array_slice($allArgs, 1);
+    $param_string = join("|||", $params);
+    add_local_storage("import_one_course", $param_string);
     if((empty($course_id)||strlen($course_id)==0) ||
         (empty($course_name)||strlen($course_name)==0) ||
         (empty($course_credit)||strlen($course_credit)==0) ||
         (empty($class_hours)||strlen($class_hours)==0) ||
     !is_numeric($course_credit) || !is_numeric($class_hours)){
         echo "<script>alert('提交数据不合法')</script>";
+        clear_local_storage();
         return false;
     }
     $stmt_check = $conn->prepare("select * from course where course_id = ?");
@@ -1339,14 +1481,21 @@ function import_one_course($conn,$course_id,$course_name,$course_credit,$class_h
     }
     if(!$r){
         echo "<script>alert('添加/更新失败，请检查后重试')</script>";
+        clear_local_storage();
         return false;
     }else{
         echo "<script>alert('添加/更新成功')</script>";
+        clear_local_storage();
         return true;
     }
 }
 /*上课时间的形式书写为：教室号:时间段号1,时间段号2|教室号:时间段号|...|教室号:时间段号*/
-function import_one_section($conn,$course_id,$sec_id,$semester,$year,$sweek,$eweek,$number,$instructor_str,$exam_week,$exam_day,$exam_type,$exam_des,$exam_stime,$exam_etime,$classtime_str){
+function import_one_section($conn,$course_id,$sec_id,$semester,$year,$sweek,$eweek,$number,
+                            $instructor_str,$exam_week,$exam_day,$exam_type,$exam_des,$exam_stime,$exam_etime,$classtime_str){
+    $allArgs = func_get_args();
+    $params = array_slice($allArgs, 1);
+    $param_string = join("|||", $params);
+    add_local_storage("import_one_section", $param_string);
     $values = [];
     $class_time = [];
     $values[0] = $course_id;
@@ -1374,7 +1523,9 @@ function import_one_section($conn,$course_id,$sec_id,$semester,$year,$sweek,$ewe
 
 }
 
-function load_single_section($conn,$values,$class_time,$insIdArray,$exam_week,$exam_day,$exam_type,$exam_des,$exam_stime,$exam_etime,$error_mes_update,$error_mes_insert,$error_mes_insert_conflict1,$error_mes_insert_conflict2){
+function load_single_section($conn,$values,$class_time,$insIdArray,$exam_week,$exam_day,$exam_type,
+                             $exam_des,$exam_stime,$exam_etime,$error_mes_update,$error_mes_insert,
+                             $error_mes_insert_conflict1,$error_mes_insert_conflict2){
     $conn->autocommit(false);
     $stmt_search_section = $conn->prepare("select * from `section` where course_id=? and sec_id=? and semester=? and `year`=?");
     $stmt_insert_section = $conn->prepare("insert into `section` (course_id, sec_id, semester, `year`, start_week, end_week, `number`, selected_num, exam_id) values(?, ?, ?, ?, ?, ?, ?, ?, ?)");
@@ -1407,6 +1558,7 @@ function load_single_section($conn,$values,$class_time,$insIdArray,$exam_week,$e
         $stmt_delete_class_time_place->free_result();
         if(!$result){
             $conn->rollback();
+            clear_local_storage();
             echo "<script>alert('".$error_mes_update."')</script>";
             return false;
         }
@@ -1416,6 +1568,7 @@ function load_single_section($conn,$values,$class_time,$insIdArray,$exam_week,$e
         $stmt_delete_teaches->free_result();
         if(!$result){
             $conn->rollback();
+            clear_local_storage();
             echo "<script>alert('".$error_mes_update."')</script>";
             return false;
         }
@@ -1440,6 +1593,7 @@ function load_single_section($conn,$values,$class_time,$insIdArray,$exam_week,$e
                 $result = $stmt_insert_time_slot->execute();
                 if(!$result){
                     $conn->rollback();
+                    clear_local_storage();
                     echo "<script>alert('".$error_mes_update."')</script>";
                     return false;
                 }
@@ -1450,6 +1604,7 @@ function load_single_section($conn,$values,$class_time,$insIdArray,$exam_week,$e
             $stmt_update_exam_time->free_result();
             if(!$result){
                 $conn->rollback();
+                clear_local_storage();
                 echo "<script>alert('".$error_mes_update."')</script>";
                 return false;
             }
@@ -1460,6 +1615,7 @@ function load_single_section($conn,$values,$class_time,$insIdArray,$exam_week,$e
         $stmt_delete_test->free_result();
         if(!$result){
             $conn->rollback();
+            clear_local_storage();
             echo "<script>alert('".$error_mes_update."')</script>";
             return false;
         }
@@ -1469,6 +1625,7 @@ function load_single_section($conn,$values,$class_time,$insIdArray,$exam_week,$e
         $stmt_delete_paper->free_result();
         if(!$result){
             $conn->rollback();
+            clear_local_storage();
             echo "<script>alert('".$error_mes_update."')</script>";
             return false;
         }
@@ -1483,6 +1640,7 @@ function load_single_section($conn,$values,$class_time,$insIdArray,$exam_week,$e
         $stmt_insert_paper->free_result();
         if(!$result){
             $conn->rollback();
+            clear_local_storage();
             echo "<script>alert('".$error_mes_update."')</script>";
             return false;
         }
@@ -1492,6 +1650,7 @@ function load_single_section($conn,$values,$class_time,$insIdArray,$exam_week,$e
         $stmt_update_section->free_result();
         if(!$result){
             $conn->rollback();
+            clear_local_storage();
             echo "<script>alert('".$error_mes_update."')</script>";
             return false;
         }
@@ -1501,6 +1660,7 @@ function load_single_section($conn,$values,$class_time,$insIdArray,$exam_week,$e
         $stmt_update_exam->free_result();
         if(!$result){
             $conn->rollback();
+            clear_local_storage();
             echo "<script>alert('".$error_mes_update."')</script>";
             return false;
         }
@@ -1510,6 +1670,7 @@ function load_single_section($conn,$values,$class_time,$insIdArray,$exam_week,$e
         $result = $stmt_insert_exam->execute();
         if(!$result){
             $conn->rollback();
+            clear_local_storage();
             echo "<script>alert('".$error_mes_insert."')</script>";
             return false;
         }
@@ -1525,6 +1686,7 @@ function load_single_section($conn,$values,$class_time,$insIdArray,$exam_week,$e
         }
         if(!$result){
             $conn->rollback();
+            clear_local_storage();
             echo "<script>alert('".$error_mes_insert."')</script>";
             return false;
         }
@@ -1539,6 +1701,7 @@ function load_single_section($conn,$values,$class_time,$insIdArray,$exam_week,$e
                 $result = $stmt_insert_time_slot->execute();
                 if(!$result){
                     $conn->rollback();
+                    clear_local_storage();
                     echo "<script>alert('".$error_mes_insert."')</script>";
                     return false;
                 }
@@ -1552,6 +1715,7 @@ function load_single_section($conn,$values,$class_time,$insIdArray,$exam_week,$e
             $result = $stmt_inset_exam_time->execute();
             if(!$result){
                 $conn->rollback();
+                clear_local_storage();
                 echo "<script>alert('".$error_mes_insert."')</script>";
                 return false;
             }
@@ -1561,6 +1725,7 @@ function load_single_section($conn,$values,$class_time,$insIdArray,$exam_week,$e
         $result = $stmt_insert_section->execute();
         if(!$result){
             $conn->rollback();
+            clear_local_storage();
             echo "<script>alert('".$error_mes_insert."(可能尚未导入初始课程信息)')</script>";
             return false;
         }
@@ -1574,6 +1739,7 @@ function load_single_section($conn,$values,$class_time,$insIdArray,$exam_week,$e
             $result = $stmt_insert_class_time_place->execute();
             if(!$result){
                 $conn->rollback();
+                clear_local_storage();
                 echo "<script>alert('".$error_mes_insert_conflict1."(也可能是教室信息错误)')</script>";
                 return false;
             }
@@ -1595,6 +1761,7 @@ function load_single_section($conn,$values,$class_time,$insIdArray,$exam_week,$e
         if($conflict_result->num_rows){
             $stmt_check_teacher_section_conflict->free_result();
             $conn->rollback();
+            clear_local_storage();
             echo "<script>alert('".$error_mes_insert_conflict2."')</script>";
             return false;
         }
@@ -1603,12 +1770,14 @@ function load_single_section($conn,$values,$class_time,$insIdArray,$exam_week,$e
         $result = $stmt_insert_teaches->execute();
         if(!$result){
             $conn->rollback();
+            clear_local_storage();
             echo "<script>alert('".$error_mes_insert."(也可能是老师信息错误)')</script>";
             return false;
         }
     }
 
     $conn->commit();
+    clear_local_storage();
     $conn->autocommit(true);
     return true;
 }
@@ -1664,12 +1833,17 @@ function get_system_status($conn){
 }
 
 function change_status2initializing($conn){
+    $allArgs = func_get_args();
+    $params = array_slice($allArgs, 1);
+    $param_string = join("|||", $params);
+    add_local_storage("change_status2initializing", $param_string);
     $conn->autocommit(false);
     $stmt_revoke_student = "revoke all privileges on *.* from student";
     $query = mysqli_query($conn,$stmt_revoke_student);
     if(!$query){
         alert_error($conn);
         $conn->rollback();
+        clear_local_storage();
         echo "切换失败";
         return false;
     }
@@ -1677,6 +1851,7 @@ function change_status2initializing($conn){
     $query = mysqli_query($conn,$stmt_revoke_teacher);
     if(!$query){
         $conn->rollback();
+        clear_local_storage();
         echo "切换失败";
         return false;
     }
@@ -1684,13 +1859,14 @@ function change_status2initializing($conn){
     $query = mysqli_query($conn,$stmt_grant_stu);
     if(!$query){
         $conn->rollback();
-        echo "切换失败";
+        echo "切换失败";clear_local_storage();
         return false;
     }
     $stmt_grant_tea = "grant select on `course_select_system`.* to teacher";
     $query = mysqli_query($conn,$stmt_grant_tea);
     if(!$query){
         $conn->rollback();
+        clear_local_storage();
         echo "切换失败";
         return false;
     }
@@ -1698,19 +1874,26 @@ function change_status2initializing($conn){
     $query = mysqli_query($conn,$stmt_flush);
     if(!$query){
         $conn->rollback();
+        clear_local_storage();
         echo "切换失败";
         return false;
     }
     $conn->commit();
+    clear_local_storage();
     $conn->autocommit(true);
     return true;
 }
 function change_status2starting($conn){
+    $allArgs = func_get_args();
+    $params = array_slice($allArgs, 1);
+    $param_string = join("|||", $params);
+    add_local_storage("change_status2starting", $param_string);
     $conn->autocommit(false);
     $stmt_revoke_student = "revoke all privileges on *.* from student";
     $query = mysqli_query($conn,$stmt_revoke_student);
     if(!$query){
         $conn->rollback();
+        clear_local_storage();
         echo "切换失败";
         return false;
     }
@@ -1718,6 +1901,7 @@ function change_status2starting($conn){
     $query = mysqli_query($conn,$stmt_revoke_teacher);
     if(!$query){
         $conn->rollback();
+        clear_local_storage();
         echo "切换失败";
         return false;
     }
@@ -1736,6 +1920,7 @@ function change_status2starting($conn){
     if(!$r1 || !$r2 || !$r3 || !$r4 || !$r5 || !$r6){
         $conn->rollback();
         echo "切换失败";
+        clear_local_storage();
         return false;
     }
     $stmt_grant_tea1 = "grant select on `course_select_system`.* to teacher";
@@ -1748,6 +1933,7 @@ function change_status2starting($conn){
     $r4 = mysqli_query($conn,$stmt_grant_tea4);
     if(!$r1 || !$r2 || !$r3 || !$r4){
         $conn->rollback();
+        clear_local_storage();
         echo "切换失败";
         return false;
     }
@@ -1755,20 +1941,27 @@ function change_status2starting($conn){
     $query = mysqli_query($conn,$stmt_flush);
     if(!$query){
         $conn->rollback();
+        clear_local_storage();
         echo "切换失败";
         return false;
     }
     $conn->commit();
+    clear_local_storage();
     $conn->autocommit(true);
     return true;
 
 }
 function change_status2grading($conn){
+    $allArgs = func_get_args();
+    $params = array_slice($allArgs, 1);
+    $param_string = join("|||", $params);
+    add_local_storage("change_status2grading", $param_string);
     $conn->autocommit(false);
     $stmt_revoke_student = "revoke all privileges on *.* from student";
     $query = mysqli_query($conn,$stmt_revoke_student);
     if(!$query){
         $conn->rollback();
+        clear_local_storage();
         echo "切换失败";
         return false;
     }
@@ -1776,6 +1969,7 @@ function change_status2grading($conn){
     $query = mysqli_query($conn,$stmt_revoke_teacher);
     if(!$query){
         $conn->rollback();
+        clear_local_storage();
         echo "切换失败";
         return false;
     }
@@ -1783,6 +1977,7 @@ function change_status2grading($conn){
     $r1 = mysqli_query($conn,$stmt_grant_stu1);
     if(!$r1){
         $conn->rollback();
+        clear_local_storage();
         echo "切换失败";
         return false;
     }
@@ -1798,6 +1993,7 @@ function change_status2grading($conn){
     $r5 = mysqli_query($conn,$stmt_grant_tea5);
     if(!$r1 || !$r2 || !$r3 || !$r4 || !$r5){
         $conn->rollback();
+        clear_local_storage();
         echo "切换失败";
         return false;
     }
@@ -1805,14 +2001,20 @@ function change_status2grading($conn){
     $query = mysqli_query($conn,$stmt_flush);
     if(!$query){
         $conn->rollback();
+        clear_local_storage();
         echo "切换失败";
         return false;
     }
     $conn->commit();
+    clear_local_storage();
     $conn->autocommit(true);
     return true;
 }
 function arrange_test($conn){
+    $allArgs = func_get_args();
+    $params = array_slice($allArgs, 1);
+    $param_string = join("|||", $params);
+    add_local_storage("arrange_test", $param_string);
     $conn->autocommit(false);
     $stmt1 = $conn->prepare("select exam_id, time_slot_id, selected_num from 
                                                 test natural join exam natural join section natural join exam_time");
@@ -1820,6 +2022,7 @@ function arrange_test($conn){
     if(!$r1){
         alert_error($conn);
         $conn->rollback();
+        clear_local_storage();
         return false;
     }
     $stmt1->store_result();
@@ -1832,6 +2035,7 @@ function arrange_test($conn){
     if(!$r2){
         alert_error($conn);
         $conn->rollback();
+        clear_local_storage();
         return false;
     }
     $stmt2->store_result();
@@ -1848,6 +2052,7 @@ function arrange_test($conn){
                 if(!$r3){
                     alert_error($conn);
                     $conn->rollback();
+                    clear_local_storage();
                     return false;
                 }
                 $num = 0;
@@ -1864,6 +2069,7 @@ function arrange_test($conn){
                     if(!$r4){
                         alert_error($conn);
                         $conn->rollback();
+                        clear_local_storage();
                         return false;
                     }
                     $success = true;
@@ -1876,5 +2082,6 @@ function arrange_test($conn){
         }
     }
     $conn->commit();
+    clear_local_storage();
     return true;
 }

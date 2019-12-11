@@ -9,6 +9,7 @@
 require_once 'ConnectSQL.php';
 require_once 'components.php';
 require_once 'check_privilege.php';
+require_once 'process_local_storage_helper.php';
 
 session_start();
 if(!isset($_SESSION['st_id'])) {
@@ -22,6 +23,7 @@ if($role === 'teacher'){
 }
 $st_id = $_SESSION['st_id'];
 $conn = connectToDB("127.0.0.1", $role, $role, "course_select_system");
+check_local_storage();
 if(isset($_GET['choose_or_drop'])){
     $cd_sec_id = $_GET['sec_id'];
     $cd_course_id = $_GET['course_id'];
@@ -34,7 +36,7 @@ if(isset($_GET['choose_or_drop'])){
         $res = drop_lesson($conn, $st_id, $cd_sec_id, $cd_course_id, $cd_semester, $cd_year);
     }
     if($res)
-        jump_to_page("/SubjectSystem/personal_index_student.php");
+        jump_to_page("personal_index_student.php");
     else
         echo "别刷新，先把get后面的参数删了";
 }
@@ -57,7 +59,7 @@ if(isset($_POST['app_course_id'])){
     $res = make_application($conn, $st_id, $app_sec_id, $app_course_id, $app_semester, $app_year, $app_content);
     if($res){
         alert_msg("申请课程成功");
-        jump_to_page("/SubjectSystem/personal_index_student.php");
+        jump_to_page("personal_index_student.php");
     }
 }
 

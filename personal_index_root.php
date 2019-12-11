@@ -589,7 +589,7 @@ $conn = connectToDB();//"127.0.0.1","collegeadmin","collegeadmin"
                                 <input name="adds_startweek" class="form-group form-control" placeholder="起始周">
                                 <input name="adds_endweek" class="form-group form-control" placeholder="结束周">
                                 <input name="adds_number" class="form-group form-control" placeholder="可选人数">
-                                <input name="adds_instructor" class="form-group form-control" placeholder="任课教师">
+                                <input name="adds_instructor" class="form-group form-control" placeholder="任课教师（填写工号，用,分割）">
                                 <input name="adds_examweek" class="form-group form-control" placeholder="考试周">
                                 <input name="adds_examday" class="form-group form-control" placeholder="考试天(1-7)">
                                 <input name="adds_examtype" class="form-group form-control" placeholder="考试/其他">
