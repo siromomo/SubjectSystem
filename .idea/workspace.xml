@@ -2,13 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="cdd7f965-18d4-4d8d-8e69-94ae514193a9" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/processLocalStorage.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/process_local_storage_helper.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/components.php" beforeDir="false" afterPath="$PROJECT_DIR$/components.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/personal_index_instructor.php" beforeDir="false" afterPath="$PROJECT_DIR$/personal_index_instructor.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/personal_index_root.php" beforeDir="false" afterPath="$PROJECT_DIR$/personal_index_root.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/personal_index_student.php" beforeDir="false" afterPath="$PROJECT_DIR$/personal_index_student.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/数据库pj项目文档.docx" beforeDir="false" afterPath="$PROJECT_DIR$/数据库pj项目文档.docx" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -21,7 +16,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/index.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="180">
+            <state relative-caret-position="342">
               <caret line="19" column="22" selection-start-line="19" selection-start-column="22" selection-end-line="19" selection-end-column="22" />
             </state>
           </provider>
@@ -30,7 +25,7 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/components.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-21079">
+            <state relative-caret-position="18">
               <caret line="726" column="49" selection-start-line="726" selection-start-column="49" selection-end-line="726" selection-end-column="49" />
             </state>
           </provider>
@@ -57,7 +52,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/readExcel.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="667">
+            <state relative-caret-position="2052">
               <caret line="114" column="44" selection-start-line="114" selection-start-column="44" selection-end-line="114" selection-end-column="44" />
             </state>
           </provider>
@@ -85,7 +80,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/process_local_storage_helper.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="503">
+            <state relative-caret-position="2304">
               <caret line="133" column="26" selection-start-line="133" selection-start-column="26" selection-end-line="133" selection-end-column="26" />
             </state>
           </provider>
@@ -94,7 +89,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/personal_index_root.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="194">
+            <state relative-caret-position="10638">
               <caret line="591" column="122" selection-start-line="591" selection-start-column="122" selection-end-line="591" selection-end-column="122" />
             </state>
           </provider>
@@ -148,10 +143,11 @@
     </servers>
   </component>
   <component name="PhpWorkspaceProjectConfiguration" interpreter_name="PHP" />
-  <component name="ProjectFrameBounds" extendedState="7">
-    <option name="x" value="1850" />
-    <option name="width" value="1955" />
-    <option name="height" value="2075" />
+  <component name="ProjectFrameBounds" extendedState="6">
+    <option name="x" value="-15" />
+    <option name="y" value="-15" />
+    <option name="width" value="3873" />
+    <option name="height" value="2093" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectView">
@@ -159,7 +155,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -176,6 +171,7 @@
           <select />
         </subPane>
       </pane>
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -233,18 +229,19 @@
       <workItem from="1575796799939" duration="1462000" />
       <workItem from="1575802656642" duration="3864000" />
       <workItem from="1575807490917" duration="21000" />
-      <workItem from="1575958177687" duration="11774000" />
+      <workItem from="1575958177687" duration="12353000" />
+      <workItem from="1576136896603" duration="107000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="124194000" />
+    <option name="totallyTimeSpent" value="124880000" />
   </component>
   <component name="ToolWindowManager">
-    <frame x="-6" y="-6" width="1549" height="837" extended-state="7" />
+    <frame x="-6" y="-6" width="1549" height="837" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.23292127" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.116460636" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -334,22 +331,29 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/index.php">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="180">
+        <state relative-caret-position="342">
           <caret line="19" column="22" selection-start-line="19" selection-start-column="22" selection-end-line="19" selection-end-column="22" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/process_local_storage_helper.php">
+    <entry file="file://$PROJECT_DIR$/personal_index_student.php">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="503">
-          <caret line="133" column="26" selection-start-line="133" selection-start-column="26" selection-end-line="133" selection-end-column="26" />
+        <state relative-caret-position="108">
+          <caret line="11" column="42" selection-start-line="11" selection-start-column="42" selection-end-line="11" selection-end-column="42" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/personal_index_root.php">
+    <entry file="file://$PROJECT_DIR$/processLocalStorage.php">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="194">
-          <caret line="591" column="122" selection-start-line="591" selection-start-column="122" selection-end-line="591" selection-end-column="122" />
+        <state relative-caret-position="198">
+          <caret line="11" column="48" selection-start-line="11" selection-start-column="48" selection-end-line="11" selection-end-column="48" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/readExcel.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2052">
+          <caret line="114" column="44" selection-start-line="114" selection-start-column="44" selection-end-line="114" selection-end-column="44" />
         </state>
       </provider>
     </entry>
@@ -366,30 +370,23 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/processLocalStorage.php">
+    <entry file="file://$PROJECT_DIR$/process_local_storage_helper.php">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="198">
-          <caret line="11" column="48" selection-start-line="11" selection-start-column="48" selection-end-line="11" selection-end-column="48" />
+        <state relative-caret-position="2304">
+          <caret line="133" column="26" selection-start-line="133" selection-start-column="26" selection-end-line="133" selection-end-column="26" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/readExcel.php">
+    <entry file="file://$PROJECT_DIR$/personal_index_root.php">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="667">
-          <caret line="114" column="44" selection-start-line="114" selection-start-column="44" selection-end-line="114" selection-end-column="44" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/personal_index_student.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="108">
-          <caret line="11" column="42" selection-start-line="11" selection-start-column="42" selection-end-line="11" selection-end-column="42" />
+        <state relative-caret-position="10638">
+          <caret line="591" column="122" selection-start-line="591" selection-start-column="122" selection-end-line="591" selection-end-column="122" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/components.php">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-21079">
+        <state relative-caret-position="18">
           <caret line="726" column="49" selection-start-line="726" selection-start-column="49" selection-end-line="726" selection-end-column="49" />
         </state>
       </provider>
