@@ -226,6 +226,19 @@ function time_slot_id_to_string($time_slot_id){
 }
 
 function take_lesson($conn, $student_id, $sec_id, $year, $course_id, $semester){
+    $check_student = $conn->prepare("select graduate_time from student where student_id=?");
+    $check_student->bind_param("s", $student_id);
+
+    $r0 = $check_student->execute();
+    $gra_time = "";
+    $check_student->bind_result($gra_time);
+    $check_student->fetch();
+    if($gra_time != null || strlen($gra_time) > 0){
+        alert_msg("您已毕业，不能选课");
+        return false;
+    }
+    $check_student->free_result();
+
     $conn->autocommit(false);
     $allArgs = func_get_args();
     $params = array_slice($allArgs, 1);
@@ -493,6 +506,7 @@ function get_class_time_place($conn, $section){
 }
 
 function choose_lesson($conn, $student_id, $sec_id, $course_id, $semester, $year){
+
     //alter table takes add unique(student_id, sec_id, course_id, semester, year);
     $stmt = $conn->prepare("insert into takes(student_id, sec_id, course_id, semester, year) values(?,?,?,?,?)");
     $stmt->bind_param("sissi", $student_id, $sec_id, $course_id, $semester, $year);

@@ -38,7 +38,7 @@ if(isset($_GET['choose_or_drop'])){
     if($res)
         jump_to_page("personal_index_student.php");
     else
-        echo "别刷新，先把get后面的参数删了";
+        jump_to_page("personal_index_student.php");
 }
 $search_type = null;
 $search_content = null;

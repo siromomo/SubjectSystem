@@ -30,6 +30,9 @@ if(isset($_GET['new_status'])){
     if($r){
         alert_msg("处理申请成功");
         jump_to_page("personal_index_instructor.php");
+    }else{
+        alert_msg("处理失败");
+        jump_to_page("personal_index_instructor.php");
     }
 }
 
